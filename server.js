@@ -7,7 +7,7 @@ const storage = multer.diskStorage({
   },
   filename: function (req, file, cb) {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.originalname + '-' + uniqueSuffix)
+    cb(null, uniqueSuffix + '-' + file.originalname);
   }
 })
 const upload = multer({storage: storage}) // 미들웨어
@@ -19,7 +19,7 @@ app.get('/', function (req, res) {
 
 app.post('/upload', upload.single('image'), (req, res) => {
   console.log(req.file);
-  res.send('File uploaded successfully!');
+  res.send('File uploaded successfully! ');
 })
 
 app.listen(8080, function(){
