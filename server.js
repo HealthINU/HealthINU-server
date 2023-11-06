@@ -1,6 +1,8 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const spawn = require("child_process").spawn;
+const fs = require("fs");
 
 const app = express();
 
@@ -20,8 +22,23 @@ app.get("/", function (req, res) {
 });
 
 app.post("/upload", upload.single("image"), (req, res) => {
-  console.log(req.file);
-  res.send("File uploaded successfully! ");
+  fs.readFile(req.file.path, (err, data) => {
+    if (err) throw err;
+  
+    const process = spawn("python3", ["image.py"]); // 실행시킬 파이썬 프로세스
+  
+    process.stdin.write(data);
+    process.stdin.end();
+  
+    process.stdout.on("data", (data) => {
+      console.log(`${data}`);
+    });
+  
+    process.stderr.on("data", (data) => {
+      console.log(`${data}`);
+    });
+  });
+  res.send("File uploaded successfully!");
 });
 
 app.listen(8080, function () {
