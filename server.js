@@ -44,7 +44,7 @@ app.post("/process", async (req, res) => {
       console.log(response);
       if (response && response.result) {
         const top3_result = response.result; // 'result' 필드에 저장된 top3_result 
-        console.log('Upload successful! Server responded with:');
+        console.log('Upload successful!');
         res.send({result: top3_result});
       } else {
         console.error('Error in server response:', response);
