@@ -45,12 +45,10 @@
                 var resultDiv = document.getElementById("result");
                 resultDiv.innerHTML = ''; // 기존 이미지들 제거
                 var results = data.result;
-                var rank = 1; // 순위를 표시하기 위한 변수
-                for (var machine in results) {
+                for (var i = 0; i < results.length; i++) {
                     var rankDiv = document.createElement("div"); // 순위를 담을 div 생성
-                    rankDiv.textContent = rank + "순위: " + machine + " (" + results[machine] + ")"; // 순위와 운동기구 이름, 가중치 표시
+                    rankDiv.textContent = (i+1) + "순위: " + results[i].name + " (" + results[i].prob + ")"; // 순위와 운동기구 이름, 가중치 표시
                     resultDiv.appendChild(rankDiv); // 결과 div에 순위 div 추가
-                    rank++; // 순위 증가
                 }
             },
             cache: false,
