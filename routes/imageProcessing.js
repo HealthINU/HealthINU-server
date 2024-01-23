@@ -4,10 +4,12 @@ const multer = require("multer");
 const path = require("path");
 const request = require("request");
 
+/*
 router.get("/", function (req, res) {
     // path.resolve : 상대경로를 절대경로로 변환
     res.sendFile(path.resolve(__dirname, '../upload.html'));
 });
+*/
 
 router.use("/images", express.static(path.join(__dirname, "Images")));
 

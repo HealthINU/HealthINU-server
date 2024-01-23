@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const path = require("path");
 
 router.get("/", function (req, res) {
-    res.send("HealthINU 메인화면"); 
+    res.sendFile(path.resolve(__dirname, '../login.html')); 
 });
 
 module.exports = router;
