@@ -23,7 +23,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
   clientID:     "602403043475-71i4ij4srpk8dffp77e8keaqmth61kk1.apps.googleusercontent.com",
   clientSecret: "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",
-  callbackURL: "http://www.healthinu.kro.kr:8080/auth/google/callback",
+  callbackURL: "http://www.healthinu.r-e.kr:8080/auth/google/callback",
   passReqToCallback   : true
 },
 function(request, accessToken, refreshToken, profile, done) {
