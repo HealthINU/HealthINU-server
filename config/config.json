@@ -1,0 +1,4 @@
+{
+    "development": {"URL":"http://www.healthinu.kro.kr:8080"},
+    "production": {"URL":"http://www.healthinu.r-e.kr:8080"}
+}

@@ -1,5 +1,13 @@
 const express = require("express");
 const app = express();
+
+//  환경이 development인지 production인지 확인
+const ENV = process.env.NODE_ENV || "development";
+//  config/config.json에서 환경에 따른 설정값 가져오기
+const config = require("./config/config.json")[ENV];
+//  현재 실행되고 있는 서버 URL 가져오기
+const URL = config.URL;
+
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
 const jwt = require("jsonwebtoken");
@@ -104,7 +112,7 @@ passport.use(
       clientID:
         "602403043475-71i4ij4srpk8dffp77e8keaqmth61kk1.apps.googleusercontent.com",
       clientSecret: "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",
-      callbackURL: "http://www.healthinu.r-e.kr:8080/auth/google/callback",
+      callbackURL: `${URL}/auth/google/callback`,
       passReqToCallback: true,
     },
     function (request, accessToken, refreshToken, profile, done) {
