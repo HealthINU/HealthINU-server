@@ -128,3 +128,9 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# IntelliJ IDEA project configuration files
+.idea/
+
+# Mac OS system file
+.DS_Store
