@@ -134,3 +134,5 @@ dist
 
 # Mac OS system file
 .DS_Store
+
+config/
