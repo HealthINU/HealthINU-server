@@ -23,29 +23,17 @@ setUserToken = (url, res, user) => {
 // // GET /auth/logout
 // router.get("/logout", logout);
 
-// // GET /auth/kakao
-// router.get("/kakao", passport.authenticate("kakao"));
-
-// // GET /auth/kakao/callback
-// router.get(
-//   "/kakao/callback",
-//   passport.authenticate("kakao", {
-//     failureRedirect: "/?loginError=카카오로그인 실패",
-//   }),
-//   (req, res) => {
-//     res.redirect("/"); // 성공 시에는 /로 이동
-//   }
-// );
-
+//  GET /auth/google
 router.get("/google", function (req, res) {
   passport.authenticate("google", {
     scope: ["email", "profile"],
-    //  state에 쿼리에 저장된 url 저장
-    //  추후 req.query.state로 액세스 가능
+    //  state에 req.query.url 저장
+    //  state는 /google/callback에서 req.query.state로 액세스 가능
     state: req.query.url,
   })(req, res);
 });
 
+//  GET /auth/google/callback
 router.get("/google/callback", function (req, res, next) {
   passport.authenticate("google", function (err, user, info) {
     if (err) {
@@ -55,7 +43,7 @@ router.get("/google/callback", function (req, res, next) {
       return res.redirect("/login");
     }
 
-    //  /auth/google 에서 state에 저장한 url 값 불러오기
+    //  /google 에서 state에 저장한 url 값 불러오기
     const url = req.query.state;
 
     req.login(user, { session: false }, function (err) {

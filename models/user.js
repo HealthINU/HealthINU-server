@@ -1,5 +1,6 @@
 const Sequelize = require("sequelize");
 
+//  User 모델 정의
 class User extends Sequelize.Model {
   static initiate(sequelize) {
     User.init(
@@ -49,8 +50,8 @@ class User extends Sequelize.Model {
         timestamps: false,
         underscored: false,
         modelName: "User",
-        tableName: "user_db",
-        freezeTableName: true,
+        tableName: "user_db", //  테이블 이름
+        freezeTableName: true, //  테이블 이름 복수화 방지
         paranoid: false,
         charset: "utf8mb4",
         collate: "utf8mb4_general_ci",

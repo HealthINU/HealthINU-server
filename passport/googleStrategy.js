@@ -1,6 +1,6 @@
 const passport = require("passport");
-// const KakaoStrategy = require("passport-kakao").Strategy;
 const GoogleStrategy = require("passport-google-oauth2").Strategy;
+//  User 모델 가져오기
 const User = require("../models/user");
 
 //  환경이 development인지 production인지 확인
@@ -21,7 +21,9 @@ module.exports = () => {
         passReqToCallback: true,
       },
       async (request, accessToken, refreshToken, profile, done) => {
+        //  구글에서 준 정보 저장
         const user_info = {
+          //  이메일에서 @ 앞의 부분 잘라서 id 만듬
           id: profile.email.split("@")[0],
           email: profile.email,
         };
@@ -29,12 +31,16 @@ module.exports = () => {
         console.log("user_info", user_info);
 
         try {
+          //  기존에 있는 유저인지 확인
           const exUser = await User.findOne({
             where: { user_id: user_info.id },
           });
+          //  있으면 통과
           if (exUser) {
             done(null, exUser);
-          } else {
+          }
+          //  없으면 유저 생성
+          else {
             const newUser = await User.create({
               user_name: user_info.id,
               user_id: user_info.id,
