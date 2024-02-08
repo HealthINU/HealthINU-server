@@ -35,8 +35,8 @@ sequelize
   });
 
 //  각종 미들웨어 설정
-app.use(passport.initialize());
 app.use(express.json());
+app.use(passport.initialize());
 
 //  라우터 설정
 app.use("/", mainRouter); // 메인화면 라우터
@@ -53,7 +53,9 @@ app.use(function (req, res, next) {
 //  그 외 에러 처리
 app.use(function (err, req, res, next) {
   console.error(err.stack);
-  res.status(500).send("Something broke!");
+  res.status(500).json({
+    messenge: err.message,
+  });
 });
 
 app.listen(8080, function () {

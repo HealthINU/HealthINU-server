@@ -13,11 +13,30 @@ setUserToken = (url, res, user) => {
   res.redirect(`${url}?token=${token}`); // 토큰을 포함한 URL로 리다이렉트
 };
 
+//  GET /auth/verify
+router.get(
+  "/verify",
+  passport.authenticate("jwt", { session: false, failWithError: true }),
+  (req, res) => {
+    return res.status(200).json({ message: "Verified" });
+  },
+  (err, req, res, next) => {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+);
+
 // POST /auth/join
 router.post("/join", join);
 
 // POST /auth/login
-router.post("/login", login);
+router.post(
+  "/login",
+  (req, res, next) => {
+    console.log(req.body);
+    next();
+  },
+  login
+);
 
 // // GET /auth/logout
 // router.get("/logout", logout);

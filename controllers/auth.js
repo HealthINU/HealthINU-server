@@ -38,7 +38,7 @@ exports.login = (req, res, next) => {
       return next(authError);
     }
     if (!user) {
-      return res.status(400).json({
+      return res.status(401).json({
         message: "Login fail",
       });
     }
