@@ -33,11 +33,11 @@ class User extends Sequelize.Model {
         },
         user_height: {
           type: Sequelize.FLOAT,
-          allowNull: false,
+          allowNull: true,
         },
         user_weight: {
           type: Sequelize.FLOAT,
-          allowNull: false,
+          allowNull: true,
         },
         // provider: {
         //   type: Sequelize.ENUM("local", "google"),

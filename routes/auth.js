@@ -2,7 +2,7 @@ const express = require("express");
 const passport = require("passport");
 const jwt = require("jsonwebtoken");
 const secret = "dadada";
-// // const { join, login, logout } = require('../controllers/auth');
+const { join, login, logout } = require("../controllers/auth");
 
 const router = express.Router();
 
@@ -13,11 +13,11 @@ setUserToken = (url, res, user) => {
   res.redirect(`${url}?token=${token}`); // 토큰을 포함한 URL로 리다이렉트
 };
 
-// // POST /auth/join
-// router.post("/join", join);
+// POST /auth/join
+router.post("/join", join);
 
-// // POST /auth/login
-// router.post("/login", login);
+// POST /auth/login
+router.post("/login", login);
 
 // // GET /auth/logout
 // router.get("/logout", logout);

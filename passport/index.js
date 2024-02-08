@@ -5,7 +5,7 @@ const google = require("./googleStrategy");
 const User = require("../models/user");
 //  jwt Strategy 가져오기
 const jwtStrategy = require("./jwtStrategy");
-// const local = require("./localStrategy");
+const local = require("./localStrategy");
 
 module.exports = () => {
   //  아직 local를 쓰지 않으므로 serialize, deserialize는 크게 의미 없음
@@ -26,8 +26,8 @@ module.exports = () => {
       .catch((err) => done(err));
   });
 
-  // local();
   //  불러온 Strategy들 실행
   google();
   jwtStrategy();
+  local();
 };
