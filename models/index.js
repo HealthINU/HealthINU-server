@@ -7,6 +7,8 @@ const config = require("../config/config")[env]["db"];
 
 //  User 모델 가져오기
 const User = require("./user");
+const Equipment = require("./equipment");
+const Own = require("./own");
 
 const db = {};
 //  시퀄라이즈 정보 설정
@@ -20,7 +22,9 @@ const sequelize = new Sequelize(
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-//  User 모델 초기화
+//  모델 초기화
 User.initiate(sequelize);
+Equipment.initiate(sequelize);
+Own.initiate(sequelize);
 
 module.exports = db;

@@ -1,14 +1,15 @@
 const passport = require("passport");
-//  구글 Strategy 가져오기
-const google = require("./googleStrategy");
-//  User 모델 가져오기
+
+//  모델들 가져오기
 const User = require("../models/user");
-//  jwt Strategy 가져오기
+const Equipment = require("../models/equipment");
+
+//  전략들 가져오기
 const jwtStrategy = require("./jwtStrategy");
 const local = require("./localStrategy");
+const google = require("./googleStrategy");
 
 module.exports = () => {
-  //  아직 local를 쓰지 않으므로 serialize, deserialize는 크게 의미 없음
   passport.serializeUser((user, done) => {
     console.log("serialize");
     done(null, user.user_id);
