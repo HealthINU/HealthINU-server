@@ -52,8 +52,7 @@ app.use(function (req, res, next) {
 
 //  그 외 에러 처리
 app.use(function (err, req, res, next) {
-  console.error(err.stack);
-  res.status(500).json({
+  res.status(err.status).json({
     messenge: err.message,
   });
 });

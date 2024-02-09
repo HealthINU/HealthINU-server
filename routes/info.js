@@ -10,9 +10,9 @@ const { get_equipment } = require("../controllers/info");
 //  유저 정보 가져오기
 router.get(
   "/user",
-  passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false, failWithError: true }),
   (req, res) => {
-    res.send(req.user);
+    return res.send(req.user);
   }
 );
 
@@ -21,7 +21,7 @@ router.get(
 //  이름, 성별, 키, 몸무게만 수정 가능
 router.patch(
   "/user",
-  passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false, failWithError: true }),
   patch_user
 );
 
@@ -29,6 +29,6 @@ module.exports = router;
 
 router.get(
   "/equip",
-  passport.authenticate("jwt", { session: false }),
+  passport.authenticate("jwt", { session: false, failWithError: true }),
   get_equipment
 );

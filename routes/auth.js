@@ -19,9 +19,6 @@ router.get(
   passport.authenticate("jwt", { session: false, failWithError: true }),
   (req, res) => {
     return res.status(200).json({ message: "Verified" });
-  },
-  (err, req, res, next) => {
-    return res.status(401).json({ message: "Unauthorized" });
   }
 );
 
