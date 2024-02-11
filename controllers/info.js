@@ -21,7 +21,7 @@ exports.get_own = (req, res) => {
         where: {
             user_num: req.user.user_num,
         },
-        attributes: [],
+        attributes: ["own_image"],
         include: [{
             model: Equipment, // equipment_db 모델을 조인
         }]
