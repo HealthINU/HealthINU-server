@@ -23,6 +23,7 @@ module.exports = () => {
           //    attributes는 가져올 컬럼 설정
           //    민감한 정보는 가져오지 않음 (pw 등)
           attributes: [
+            "user_num",
             "user_id",
             "user_name",
             "user_email",

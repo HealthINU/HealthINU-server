@@ -5,6 +5,7 @@ const passport = require("passport");
 //  유저 정보 수정하는 함수 가져오기
 const { patch_user } = require("../controllers/user");
 const { get_equipment } = require("../controllers/info");
+const { get_own } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -25,10 +26,28 @@ router.patch(
   patch_user
 );
 
-module.exports = router;
-
+//  GET /info/equip
+//  운동기구 정보 가져오기
 router.get(
   "/equip",
   passport.authenticate("jwt", { session: false, failWithError: true }),
   get_equipment
 );
+
+//  GET /info/equip
+//  운동기구 정보 가져오기
+router.get(
+    "/equip",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_equipment
+);
+
+//  GET /info/own
+//  소유 정보 가져오기
+router.get(
+    "/own",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_own
+);
+
+module.exports = router;
