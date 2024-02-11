@@ -23,6 +23,10 @@ class Equipment extends Sequelize.Model {
           type: Sequelize.STRING(256),
           allowNull: true,
         },
+        equipment_description: {
+          type: Sequelize.STRING(1000),
+          allowNull: true,
+        },
       },
       {
         sequelize,
@@ -36,6 +40,9 @@ class Equipment extends Sequelize.Model {
         collate: "utf8mb4_general_ci",
       }
     );
+  }
+  static associate(models) {
+      Equipment.hasMany(models.Own, {foreignKey: 'equipment_num'});
   }
 }
 

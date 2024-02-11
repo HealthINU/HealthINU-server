@@ -27,4 +27,16 @@ User.initiate(sequelize);
 Equipment.initiate(sequelize);
 Own.initiate(sequelize);
 
+//  associate 메소드 호출
+const models = {
+    User: User,
+    Equipment: Equipment,
+    Own: Own,
+};
+Object.keys(models).forEach(key => {
+    if ('associate' in models[key]) {
+        models[key].associate(models);
+    }
+});
+
 module.exports = db;

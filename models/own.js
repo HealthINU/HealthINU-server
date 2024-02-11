@@ -1,6 +1,6 @@
 const Sequelize = require("sequelize");
 
-//  User 모델 정의
+//  Own 모델 정의
 class Own extends Sequelize.Model {
   static initiate(sequelize) {
     Own.init(
@@ -32,6 +32,11 @@ class Own extends Sequelize.Model {
         collate: "utf8mb4_general_ci",
       }
     );
+  }
+  // 외래키 설정
+  static associate(models) {
+      Own.belongsTo(models.User, {foreignKey: 'user_num'})
+      Own.belongsTo(models.Equipment, {foreignKey: 'equipment_num'})
   }
 }
 

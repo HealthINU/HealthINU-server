@@ -39,11 +39,19 @@ class User extends Sequelize.Model {
           type: Sequelize.FLOAT,
           allowNull: true,
         },
-        // provider: {
-        //   type: Sequelize.ENUM("local", "google"),
-        //   allowNull: false,
-        //   defaultValue: "local",
-        // },
+        user_level: {
+          type: Sequelize.INTEGER,
+          allowNull: true,
+        },
+        user_exp: {
+          type: Sequelize.FLOAT,
+          allowNull: true,
+        },
+        user_provider: {
+          type: Sequelize.ENUM("local", "google"),
+          allowNull: false,
+          defaultValue: "local",
+        },
       },
       {
         sequelize,
@@ -58,6 +66,9 @@ class User extends Sequelize.Model {
       }
     );
   }
+  static associate(models) {
+        User.hasMany(models.Own, {foreignKey: 'user_num'});
+    }
 }
 
 module.exports = User;
