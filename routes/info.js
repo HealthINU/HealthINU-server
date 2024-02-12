@@ -8,6 +8,7 @@ const { patch_record } = require("../controllers/info");
 const { get_equipment } = require("../controllers/info");
 const { get_own } = require("../controllers/info");
 const { get_record } = require("../controllers/info");
+const { add_record } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -58,6 +59,14 @@ router.get(
     "/record",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     get_record
+);
+
+//  POST /info/record
+//  기록 정보 추가하기
+router.post(
+    "/record",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    add_record
 );
 
 //  PATCH /info/record

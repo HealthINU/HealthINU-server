@@ -1,7 +1,6 @@
 const Equipment = require("../models/equipment");
 const Own = require("../models/own");
 const Record = require("../models/record");
-const User = require("../models/user");
 
 // 운동 정보 가져오기
 exports.get_equipment = (req, res) => {
@@ -43,7 +42,6 @@ exports.get_own = (req, res) => {
 
 // 기록 정보 가져오기
 exports.get_record = (req, res) => {
-    console.log(Record);
     Record.findAll({
         where: {
             user_num: req.user.user_num,
@@ -61,6 +59,23 @@ exports.get_record = (req, res) => {
         .catch((err) => {
             //  가져오기 실패 메시지 전송
             //console.log(err);
+            res.status(400).send({ message: "Server error" });
+        });
+};
+
+// 기록 정보 추가하기
+exports.add_record = (req, res) => {
+    // 요청에서 정보 추출
+    const recordInfo = req.body;
+
+    // 새로운 기록 생성
+    Record.create(recordInfo)
+        .then((record) => {
+            // 추가 성공 메시지 전송
+            res.status(200).send({ message: "Success" });
+        })
+        .catch((err) => {
+            // 추가 실패 메시지 전송
             res.status(400).send({ message: "Server error" });
         });
 };
