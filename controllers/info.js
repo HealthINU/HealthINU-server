@@ -40,6 +40,23 @@ exports.get_own = (req, res) => {
         });
 };
 
+// 소유 정보 추가하기
+exports.add_own = (req, res) => {
+    // 요청에서 정보 추출
+    const ownInfo = req.body;
+
+    // 새로운 기록 생성
+    Own.create(ownInfo)
+        .then((own) => {
+            // 추가 성공 메시지 전송
+            res.status(200).send({ message: "Success" });
+        })
+        .catch((err) => {
+            // 추가 실패 메시지 전송
+            res.status(400).send({ message: "Server error" });
+        });
+};
+
 // 기록 정보 가져오기
 exports.get_record = (req, res) => {
     Record.findAll({

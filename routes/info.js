@@ -9,6 +9,7 @@ const { get_equipment } = require("../controllers/info");
 const { get_own } = require("../controllers/info");
 const { get_record } = require("../controllers/info");
 const { add_record } = require("../controllers/info");
+const { add_own } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -51,6 +52,14 @@ router.get(
     "/own",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     get_own
+);
+
+//  POST /info/own
+//  소유 정보 추가하기
+router.post(
+    "/own",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    add_own
 );
 
 //  GET /info/record
