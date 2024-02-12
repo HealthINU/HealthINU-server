@@ -57,6 +57,32 @@ exports.add_own = (req, res) => {
         });
 };
 
+// 소유 정보 삭제하기
+exports.delete_own = (req, res) => {
+    // 요청에서 삭제할 운동기구 번호(equipment_num) 추출
+    const equipment_num = req.params.equipment_num;
+
+    Own.destroy({
+        where: {
+            user_num: req.user.user_num,
+            equipment_num: equipment_num
+        },
+    })
+        .then((deleteCount) => {
+            // 삭제 성공 메시지 전송
+            if(deleteCount > 0) {
+                res.status(200).send({ message: "Success" });
+            } else {
+                res.status(404).send({ message: "Not found" });
+            }
+        })
+        .catch((err) => {
+            // 삭제 실패 메시지 전송
+            console.log(err);
+            res.status(400).send({ message: "Server error" });
+        });
+};
+
 // 기록 정보 가져오기
 exports.get_record = (req, res) => {
     Record.findAll({
@@ -135,10 +161,34 @@ exports.patch_record = (req, res) => {
     })
         .then((record) => {
             //  수정 성공 메시지 전송
-            res.status(200).send({ message: "Record info updated!" });
+            res.status(200).send({ message: "Success" });
         })
         .catch((err) => {
             //  수정 실패 메시지 전송
-            res.status(400).send({ error: "Invalid updates!" });
+            res.status(400).send({ error: "Server error" });
+        });
+};
+
+// 기록 정보 삭제하기
+exports.delete_record = (req, res) => {
+    // 요청에서 기록 번호(record_num) 추출
+    const record_num = req.params.record_num;
+
+    Record.destroy({
+        where: {
+            record_num: record_num,
+        },
+    })
+        .then((deleteCount) => {
+            // 삭제 성공 메시지 전송
+            if(deleteCount > 0) {
+                res.status(200).send({ message: "Success" });
+            } else {
+                res.status(404).send({ message: "Not found" });
+            }
+        })
+        .catch((err) => {
+            // 삭제 실패 메시지 전송
+            res.status(400).send({ message: "Server error" });
         });
 };

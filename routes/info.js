@@ -10,6 +10,8 @@ const { get_own } = require("../controllers/info");
 const { get_record } = require("../controllers/info");
 const { add_record } = require("../controllers/info");
 const { add_own } = require("../controllers/info");
+const { delete_record } = require("../controllers/info");
+const { delete_own } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -62,6 +64,14 @@ router.post(
     add_own
 );
 
+//  DELETE /info/own
+//  소유 정보 삭제하기
+router.delete(
+    "/own/:equipment_num",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    delete_own
+);
+
 //  GET /info/record
 //  기록 정보 가져오기
 router.get(
@@ -85,6 +95,14 @@ router.patch(
     "/record",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     patch_record
+);
+
+//  DELETE /info/record
+//  기록 정보 삭제하기
+router.delete(
+    "/record/:record_num",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    delete_record
 );
 
 module.exports = router;
