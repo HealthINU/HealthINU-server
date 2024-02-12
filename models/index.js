@@ -9,6 +9,7 @@ const config = require("../config/config")[env]["db"];
 const User = require("./user");
 const Equipment = require("./equipment");
 const Own = require("./own");
+const Record = require("./record");
 
 const db = {};
 //  시퀄라이즈 정보 설정
@@ -26,6 +27,7 @@ db.sequelize = sequelize;
 User.initiate(sequelize);
 Equipment.initiate(sequelize);
 Own.initiate(sequelize);
+Record.initiate(sequelize);
 
 //  associate 메소드 호출
 const models = {
