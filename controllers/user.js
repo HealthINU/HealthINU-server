@@ -44,3 +44,27 @@ exports.patch_user = (req, res) => {
       res.status(400).send({ error: "Invalid updates!" });
     });
 };
+
+// 유저 정보 삭제하기
+exports.delete_user = (req, res) => {
+  // 요청에서 유저 번호(user_num) 추출
+  const user_num = req.params.user_num;
+
+  User.destroy({
+    where: {
+      user_num: user_num,
+    },
+  })
+      .then((deleteCount) => {
+        // 삭제 성공 메시지 전송
+        if(deleteCount > 0) {
+          res.status(200).send({ message: "Success" });
+        } else {
+          res.status(404).send({ message: "Not found" });
+        }
+      })
+      .catch((err) => {
+        // 삭제 실패 메시지 전송
+        res.status(400).send({ message: "Server error" });
+      });
+};

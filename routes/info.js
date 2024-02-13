@@ -4,6 +4,7 @@ const router = express.Router();
 const passport = require("passport");
 //  유저 정보 수정하는 함수 가져오기
 const { patch_user } = require("../controllers/user");
+const { delete_user } = require("../controllers/user");
 const { patch_record } = require("../controllers/info");
 const { get_equipment } = require("../controllers/info");
 const { get_own } = require("../controllers/info");
@@ -30,6 +31,14 @@ router.patch(
   "/user",
   passport.authenticate("jwt", { session: false, failWithError: true }),
   patch_user
+);
+
+//  DELETE /info/user
+//  소유 정보 삭제하기
+router.delete(
+    "/user/:user_num",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    delete_user
 );
 
 //  GET /info/equip
