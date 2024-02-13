@@ -1,6 +1,7 @@
 const Equipment = require("../models/equipment");
 const Own = require("../models/own");
 const Record = require("../models/record");
+const User = require("../models/user");
 
 // 운동 정보 가져오기
 exports.get_equipment = (req, res) => {
@@ -107,24 +108,29 @@ exports.get_record = (req, res) => {
 };
 
 // 기록 정보 추가하기
-exports.add_record = (req, res) => {
+exports.add_record = async (req, res) => {
     // 요청에서 정보 추출
     const recordInfo = req.body;
+    // 운동기록에 따른 경험치
+    const exp = recordInfo.record_weight * recordInfo.record_count;
 
-    // 새로운 기록 생성
-    Record.create(recordInfo)
-        .then((record) => {
-            // 추가 성공 메시지 전송
-            res.status(200).send({ message: "Success" });
-        })
-        .catch((err) => {
-            // 추가 실패 메시지 전송
-            res.status(400).send({ message: "Server error" });
-        });
+    // record_db에 기록 추가
+    try {
+        await Record.create(recordInfo);
+        // 경험치 반영
+        req.user = await req.user.update({ user_exp: req.user.user_exp + exp});
+        // 경험치에 따른 레벨 시스템
+        await req.user.update({ user_level: 1 + ~~(req.user.user_exp / 100000)});
+        // 성공 메시지 전송
+        res.status(200).send({ message: "Success"});
+    } catch (err) {
+        // 실패 메시지 전송
+        res.status(400).send({ message: "Server error" });
+    }
 };
 
 // 기록 정보 수정하기
-exports.patch_record = (req, res) => {
+exports.patch_record = async (req, res) => {
     //  body에서 key만 리스트로 추출
     const updates = Object.keys(req.body);
     // 기본키인 record_num 추출 (수정기준)
@@ -153,42 +159,84 @@ exports.patch_record = (req, res) => {
     //  to_updates에 있는 키로 req.body에서 값을 가져와 to_update_info에 저장
     to_updates.forEach((update) => (to_update_info[update] = req.body[update]));
 
-    //  기록 정보 수정 ( 요청한 record_num )
-    Record.update(to_update_info, {
-        where: {
-            record_num: record_num,
-        },
-    })
-        .then((record) => {
-            //  수정 성공 메시지 전송
-            res.status(200).send({ message: "Success" });
-        })
-        .catch((err) => {
-            //  수정 실패 메시지 전송
-            res.status(400).send({ error: "Server error" });
+    try {
+        // 이전 기록 조회
+        const originalRecord = await Record.findOne({
+            where: {
+                record_num: record_num,
+            },
         });
+
+        // 기록 정보 수정
+        await Record.update(to_update_info, {
+            where: {
+                record_num: record_num,
+            },
+        });
+
+        // 수정된 기록 조회
+        const updatedRecord = await Record.findOne({
+            where: {
+                record_num: record_num,
+            },
+        });
+
+        // 경험치 계산
+        const originalExp = originalRecord.record_weight * originalRecord.record_count;
+        const updatedExp = updatedRecord.record_weight * updatedRecord.record_count;
+        const expDifference= updatedExp - originalExp;
+
+        // 경험치 반영
+        req.user = await req.user.update({ user_exp: req.user.user_exp + expDifference });
+
+        // 경험치에 따른 레벨 시스템
+        await req.user.update({ user_level: 1 + ~~(req.user.user_exp / 100000)});
+
+        // 성공 메시지 전송
+        res.status(200).send({ message: "Success" });
+    } catch (err) {
+        // 실패 메시지 전송
+        res.status(400).send({ message: "Server error"});
+    }
 };
 
 // 기록 정보 삭제하기
-exports.delete_record = (req, res) => {
+exports.delete_record = async (req, res) => {
     // 요청에서 기록 번호(record_num) 추출
     const record_num = req.params.record_num;
 
-    Record.destroy({
-        where: {
-            record_num: record_num,
-        },
-    })
-        .then((deleteCount) => {
-            // 삭제 성공 메시지 전송
-            if(deleteCount > 0) {
-                res.status(200).send({ message: "Success" });
-            } else {
-                res.status(404).send({ message: "Not found" });
-            }
-        })
-        .catch((err) => {
-            // 삭제 실패 메시지 전송
-            res.status(400).send({ message: "Server error" });
+    try {
+        // 기록 조회
+        const record = await Record.findOne({
+            where: {
+                record_num: record_num,
+            },
         });
+
+        // 경험치 계산
+        const exp = record.record_weight * record.record_count;
+
+        // 기록 삭제
+        const deleteCount = await Record.destroy({
+            where: {
+                record_num: record_num,
+            },
+        })
+
+        // 경험치 반영
+        req.user = await req.user.update({ user_exp: req.user.user_exp - exp });
+
+        // 경험치에 따른 레벨 시스템
+        await req.user.update({ user_level: 1 + ~~(req.user.user_exp / 100000)});
+
+        // 삭제 성공 메시지 전송
+        if(deleteCount > 0) {
+            res.status(200).send({ message: "Success" });
+        } else {
+            res.status(404).send({ message: "Not found" });
+        }
+    } catch (err) {
+        // 삭제 실패 메시지 전송
+        res.status(400).send({ message: "Server error" });
+    }
 };

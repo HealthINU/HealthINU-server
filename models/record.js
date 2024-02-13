@@ -29,7 +29,8 @@ class Record extends Sequelize.Model {
         },
         record_weight: {
           type: Sequelize.FLOAT,
-          allowNull: true,
+          allowNull: false,
+          defaultValue: 1.0,
         },
       },
       {

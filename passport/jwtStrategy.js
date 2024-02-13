@@ -30,6 +30,9 @@ module.exports = () => {
             "user_gender",
             "user_height",
             "user_weight",
+            "user_level",
+            "user_exp",
+            "user_provider"
           ],
         })
           .then((user) => {

@@ -42,10 +42,12 @@ class User extends Sequelize.Model {
         user_level: {
           type: Sequelize.INTEGER,
           allowNull: true,
+          defaultValue: 1,
         },
         user_exp: {
           type: Sequelize.FLOAT,
           allowNull: true,
+          defaultValue: 0,
         },
         user_provider: {
           type: Sequelize.ENUM("local", "google"),
