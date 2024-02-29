@@ -231,38 +231,44 @@ exports.delete_record = async (req, res) => {
     // 요청에서 기록 번호(record_num) 추출
     const record_num = req.params.record_num;
 
-    try {
-        // 기록 조회
-        const record = await Record.findOne({
-            where: {
-                record_num: record_num,
-            },
-        });
+    // 기록 조회
+    const record = await Record.findOne({
+        where: {
+            record_num: record_num,
+            user_num: req.user.user_num,
+        },
+    });
 
-        // 경험치 계산
-        const exp = record.record_weight * record.record_count;
+    if (record) {
+        try {
+            // 경험치 계산
+            const exp = record.record_weight * record.record_count;
 
-        // 기록 삭제
-        const deleteCount = await Record.destroy({
-            where: {
-                record_num: record_num,
-            },
-        })
+            // 기록 삭제
+            const deleteCount = await Record.destroy({
+                where: {
+                    record_num: record_num,
+                },
+            })
 
-        // 경험치 반영
-        req.user = await req.user.update({ user_exp: req.user.user_exp - exp });
+            // 경험치 반영
+            req.user = await req.user.update({ user_exp: req.user.user_exp - exp });
 
-        // 경험치에 따른 레벨 시스템
-        await req.user.update({ user_level: 1 + ~~(req.user.user_exp / 100000)});
+            // 경험치에 따른 레벨 시스템
+            await req.user.update({ user_level: 1 + ~~(req.user.user_exp / 100000)});
 
-        // 삭제 성공 메시지 전송
-        if(deleteCount > 0) {
-            res.status(200).send({ message: "Success" });
-        } else {
-            res.status(404).send({ message: "Not found" });
+            // 삭제 성공 메시지 전송
+            if(deleteCount > 0) {
+                res.status(200).send({ message: "Success" });
+            } else {
+                res.status(200).send({ message: "Not found" });
+            }
+
+        } catch (err) {
+            // 삭제 실패 메시지 전송
+            res.status(400).send({ message: "Server error" });
         }
-    } catch (err) {
-        // 삭제 실패 메시지 전송
-        res.status(400).send({ message: "Server error" });
+    } else {
+        res.status(200).send({ message: "No data found"});
     }
 };
