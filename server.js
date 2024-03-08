@@ -4,6 +4,8 @@ const app = express();
 const passport = require("passport");
 //  ./passport/index.js 가져오기
 const passportConfig = require("./passport");
+const cors = require("cors");
+app.use(cors());
 
 const jwt = require("jsonwebtoken");
 const secret = "dadada";
@@ -54,7 +56,7 @@ app.use(function (req, res, next) {
 
 //  그 외 에러 처리
 app.use(function (err, req, res, next) {
-  res.status(err.status).json({
+  res.status(err.status || 500).json({
     messenge: err.message,
   });
 });
