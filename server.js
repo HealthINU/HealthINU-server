@@ -13,6 +13,7 @@ const mainRouter = require("./routes/main");
 const imageProcessingRouter = require("./routes/imageProcessing");
 const authRouer = require("./routes/auth");
 const infoRouter = require("./routes/info");
+const imageRouter = require("./routes/imageProcessing");
 
 //  db.sequelize 가져오기
 const { sequelize } = require("./models");
@@ -43,6 +44,7 @@ app.use("/", mainRouter); // 메인화면 라우터
 app.use("/imageProcessing", imageProcessingRouter); // 이미지처리 라우터
 app.use("/auth", authRouer); // 인증 라우터
 app.use("/info", infoRouter); // 정보 요청 라우터
+app.use("/image", imageRouter); // 이미지 라우터
 
 //  404 에러 처리
 app.use(function (req, res, next) {
