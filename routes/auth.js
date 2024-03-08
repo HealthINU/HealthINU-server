@@ -10,7 +10,7 @@ const router = express.Router();
 //  token과 login 여부 전달
 setUserToken = (url, res, user) => {
   const token = jwt.sign({ user_id: user.user_id }, secret); // jwt 토큰 생성
-  res.redirect(`${url}?token=${token}`); // 토큰을 포함한 URL로 리다이렉트
+  res.redirect(`${url}?token=${token}?login?`); // 토큰을 포함한 URL로 리다이렉트
 };
 
 //  GET /auth/verify
