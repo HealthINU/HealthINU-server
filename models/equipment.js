@@ -23,9 +23,17 @@ class Equipment extends Sequelize.Model {
           type: Sequelize.STRING(256),
           allowNull: true,
         },
-        equipment_description: {
+        equipment_eng: {
+            type: Sequelize.STRING(50),
+            allowNull: false,
+        },
+        equipment_description1: {
           type: Sequelize.STRING(1000),
           allowNull: true,
+        },
+        equipment_description2: {
+            type: Sequelize.STRING(1000),
+            allowNull: true,
         },
       },
       {
