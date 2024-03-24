@@ -13,6 +13,7 @@ const { add_record } = require("../controllers/info");
 const { add_own } = require("../controllers/info");
 const { delete_record } = require("../controllers/info");
 const { delete_own } = require("../controllers/info");
+const { get_rank } = require("../controllers/user");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -112,6 +113,14 @@ router.delete(
     "/record/:record_num",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     delete_record
+);
+
+// GET /info/rank
+// 랭킹 정보 가져오기
+router.get(
+    "/rank",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_rank
 );
 
 module.exports = router;

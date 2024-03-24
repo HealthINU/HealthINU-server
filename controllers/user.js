@@ -1,4 +1,7 @@
 const User = require("../models/user");
+const Own = require("../models/own");
+const Equipment = require("../models/equipment");
+const {Sequelize} = require("sequelize");
 
 // 유저 정보 수정하는 함수
 exports.patch_user = (req, res) => {
@@ -65,6 +68,31 @@ exports.delete_user = (req, res) => {
       })
       .catch((err) => {
         // 삭제 실패 메시지 전송
+        res.status(400).send({ message: "Server error" });
+      });
+};
+
+// 유저 정보 레벨(+경험치)순으로 정렬해서 가져오기
+exports.get_rank = (req, res) => {
+  User.findAll({
+      attributes: ["user_name", "user_gender", "user_level", "user_exp"],
+      order: [
+          ['user_level', 'DESC'], // 레벨에 따라 내림차순 정렬
+          ['user_exp', 'DESC'], // 경험치에 따라 내림차순 정렬
+          [Sequelize.literal(`\`User\`.\`user_name\` = '${req.user.user_name}'`), 'DESC'], // 동점자가 있을때는 해당 사용자가 맨 위로 정렬
+      ],
+  })
+      .then((user) => {
+        //  가져오기 성공 메시지 전송
+        if (user.length > 0) {
+          res.status(200).send({ data: user, message: "Success" });
+        } else {
+          res.status(200).send({ data: [], message: "No data found" });
+        }
+      })
+      .catch((err) => {
+        //  가져오기 실패 메시지 전송
+        console.log(err)
         res.status(400).send({ message: "Server error" });
       });
 };
