@@ -70,6 +70,7 @@ class User extends Sequelize.Model {
   }
   static associate(models) {
         User.hasMany(models.Own, {foreignKey: 'user_num'});
+        User.hasMany(models.Quest_record, {foreignKey: 'user_num'});
     }
 }
 

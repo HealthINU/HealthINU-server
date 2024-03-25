@@ -10,6 +10,8 @@ const User = require("./user");
 const Equipment = require("./equipment");
 const Own = require("./own");
 const Record = require("./record");
+const Quest = require("./quest");
+const Quest_record = require("./quest_record");
 
 const db = {};
 //  시퀄라이즈 정보 설정
@@ -28,12 +30,16 @@ User.initiate(sequelize);
 Equipment.initiate(sequelize);
 Own.initiate(sequelize);
 Record.initiate(sequelize);
+Quest.initiate(sequelize);
+Quest_record.initiate(sequelize);
 
 //  associate 메소드 호출
 const models = {
     User: User,
     Equipment: Equipment,
     Own: Own,
+    Quest: Quest,
+    Quest_record: Quest_record
 };
 Object.keys(models).forEach(key => {
     if ('associate' in models[key]) {

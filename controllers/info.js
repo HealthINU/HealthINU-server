@@ -1,6 +1,9 @@
 const Equipment = require("../models/equipment");
 const Own = require("../models/own");
 const Record = require("../models/record");
+const Quest = require("../models/quest");
+const Quest_record = require("../models/quest_record");
+const {DATE} = require("sequelize");
 
 // 운동 정보 가져오기
 exports.get_equipment = (req, res) => {
@@ -272,3 +275,171 @@ exports.delete_record = async (req, res) => {
         res.status(200).send({ message: "No data found"});
     }
 };
+
+// 출석 퀘스트 실패, 완료 처리 알고리즘
+exports.check_attendance_quest = (req, res) => {
+    Quest_record.findOne({
+        where: {
+            user_num: req.user.user_num,
+            quest_state: '진행'
+        },
+    })
+        .then((quest_record) => {
+            if (!quest_record) {
+                return res.status(200).send({ message: "진행 중인 퀘스트가 없습니다." });
+            }
+            const questRequirement = quest_record.quest_requirement;
+            // quest_record_db에서 가져온 시작일 사용
+            const startDate = new Date(quest_record.quest_start_date);
+
+            // 종료일 계산
+            const endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + questRequirement - 1);
+
+            const today = new Date();
+            today.setHours(0,0,0,0); // 오늘 날짜를 자정으로 설정
+
+            // startDate부터 today(오늘)까지 날짜 배열 생성
+            const dateArray = [];
+            for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+                dateArray.push(new Date(d).toISOString().slice(0, 10)); // YYYY-MM-DD 형태로 변환
+            }
+            // 날짜별로 운동 기록이 있는지 확인
+            Promise.all(dateArray.map(date => {
+                return Record.findOne({
+                    where: {
+                        user_num: req.user.user_num,
+                        date: date
+                    }
+                });
+            }))
+                .then(results => {
+                    const allDatesHaveRecords = results.every(record => record !== null);
+
+                    // 종료일이 오늘보다 크고 모든 날짜에 기록이 있으면 '진행' 상태 유지
+                    if (endDate > today && allDatesHaveRecords) {
+                        quest_record.quest_state = '진행';
+                    } else if (allDatesHaveRecords && dateArray.length === questRequirement) {
+                        // 오늘 날짜가 종료일 이상이고 모든 날짜에 기록이 있으면 '완료'
+                        quest_record.quest_state = '완료';
+                    } else {
+                        // 하루라도 기록이 없으면 '실패'
+                        quest_record.quest_state = '실패';
+                    }
+                    quest_record.save()
+                        .then(() => res.status(200).send({ message: `퀘스트 ${quest_record.quest_state} 처리되었습니다.` }))
+                        .catch(err => res.status(200).send({ message: "퀘스트 상태 업데이트 실패" }));
+                })
+                .catch(err => {
+                    console.log(err);
+                    res.status(200).send({ message: "운동 기록 조회 실패" });
+                });
+        })
+        .catch(err => {
+            console.log(err);
+            res.status(400).send({ message: "서버 오류" });
+        });
+};
+
+// 출석 퀘스트 생성 알고리즘
+exports.attendance_quest = (req, res) => {
+    Quest_record.findOne({
+        where: {
+            user_num: req.user.user_num,
+        },
+        order: [
+            ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
+        ],
+        limit: 1 // 결과를 하나만 가져옴
+    })
+        .then((quest_record) => {
+            //  가져오기 성공 메시지 전송
+            if (!quest_record) {
+                // quest_record가 없다면 quest_db에서 quest_num=1을 찾아서 quest_record_db에 미진행으로 저장
+                Quest_record.create({
+                    user_num: req.user.user_num,
+                    quest_num: 1,
+                    quest_state: '미진행'
+                }).then((newRecord) => {
+                    res.status(200).send({ data: newRecord, message: "Quest record created" });
+                })
+                .catch((err) => {
+                    console.log(err);
+                    res.status(400).send({ message: "Failed to create quest record" });
+                });
+            } else {
+                // quest_record 상태에 따라 처리
+                switch(quest_record.quest_state) {
+                    case '완료':
+                        // 완료한 퀘스트의 다음 퀘스트를 찾아서 미진행으로 저장
+                        Quest.findOne({
+                            where: { quest_num: quest_record.quest_num + 1 }
+                        }).then((nextQuest) => {
+                            if (nextQuest && nextQuest.quest_num <= 5) {
+                                Quest_record.create({
+                                    user_num: req.user.user_num,
+                                    quest_num: nextQuest.quest_num,
+                                    quest_state: '미진행'
+                                }).then((newRecord) => {
+                                    res.status(200).send({ data: newRecord, message: "Quest record created" });
+                                })
+                                    .catch((err) => {
+                                        console.log(err);
+                                        res.status(400).send({ message: "Failed to create quest record" });
+                                    });
+                            } else {
+                                // 다음 퀘스트가 없는 경우 (예: 마지막 퀘스트를 완료한 경우)
+                                res.status(200).send({ message: "No next quest available" });
+                            }
+                        });
+                        break;
+                    case '실패':
+                        // 실패한 퀘스트를 미진행으로 다시 저장
+                        Quest_record.create({
+                            user_num: req.user.user_num,
+                            quest_num: quest_record.quest_num,
+                            quest_state: '미진행'
+                        }).then((newRecord) => {
+                            res.status(200).send({ data: newRecord, message: "Quest record created" });
+                        })
+                            .catch((err) => {
+                                console.log(err);
+                                res.status(400).send({ message: "Failed to create quest record" });
+                            });
+                        break;
+                    default:
+                        // 진행중이거나 미진행인 경우 변경 없음
+                        res.status(200).send({ data: quest_record, message: "Quest in progress or not started" });
+                        break;
+                }
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+            res.status(400).send({ message: "Server error" });
+        });
+};
+
+// // 퀘스트 정보 가져오기
+// exports.get_quest = (req, res) => {
+//     Quest_record.findAll({
+//         where: {
+//             user_num: req.user.user_num,
+//             quest_state:
+//         },
+//         attributes: ["record_num", "record_date", "equipment_num", "record_count", "record_weight"],
+//     })
+//         .then((record) => {
+//             //  가져오기 성공 메시지 전송
+//             if (record.length > 0) {
+//                 res.status(200).send({ data: record, message: "Success" });
+//             } else {
+//                 res.status(200).send({ data: [], message: "No data found" });
+//             }
+//         })
+//         .catch((err) => {
+//             //  가져오기 실패 메시지 전송
+//             //console.log(err);
+//             res.status(400).send({ message: "Server error" });
+//         });
+// };
