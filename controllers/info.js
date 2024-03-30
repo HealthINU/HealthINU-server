@@ -346,7 +346,7 @@ exports.delete_record = async (req, res) => {
 //     next();
 // };
 
-// // 출석 퀘스트 생성 알고리즘
+// 출석 퀘스트 생성 알고리즘
 // exports.attendance_quest = (req, res) => {
 //     Quest_record.findOne({
 //         where: {
@@ -434,6 +434,14 @@ function getDateStringInKST(date) {
 
 // 출석 퀘스트 정보 가져오기
 exports.get_attendance_quest = (req, res) => {
+
+    // 현재 날짜 생성 (연-월-일만 고려)
+    const today = new Date();
+    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+    const currentDateString = getDateStringInKST(currentDate);
+    console.log(currentDateString);
+
     // 출석 퀘스트 수행여부
     Quest_record.findOne({
         where: {
@@ -441,13 +449,6 @@ exports.get_attendance_quest = (req, res) => {
             quest_state: '진행',
         },
     }).then((process_quest) => {
-        // 현재 날짜 생성 (연-월-일만 고려)
-        console.log(process_quest);
-        const today = new Date();
-        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        console.log(currentDateString);
         if (process_quest && currentDateString > process_quest.quest_start_date) {
             // 이전 날 (currentDate에서 하루 빼기)
             const previousDate = new Date(currentDate);
@@ -489,12 +490,12 @@ exports.get_attendance_quest = (req, res) => {
                                 }).catch((error) => {
                                     // 에러 처리
                                     console.error(error);
-                                    res.status(500).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
+                                    res.status(400).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
                                 });
                             }
                         }).catch((error) => {
                             console.error(error);
-                            res.status(500).send('오늘의 운동 기록 조회 중 오류가 발생했습니다.');
+                            res.status(400).send('오늘의 운동 기록 조회 중 오류가 발생했습니다.');
                         });
                         // 출석 퀘스트 종료일이 지났다면
                     } else if (currentDateString > process_quest.quest_end_date) {
@@ -518,7 +519,7 @@ exports.get_attendance_quest = (req, res) => {
                                 }).catch((error) => {
                                     // 에러 처리
                                     console.error(error);
-                                    res.status(500).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
+                                    res.status(400).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
                                 });
                             }
                             // 출석 종료일 날 운동기록이 없다면
@@ -534,12 +535,12 @@ exports.get_attendance_quest = (req, res) => {
                                 }).catch((error) => {
                                     // 에러 처리
                                     console.error(error);
-                                    res.status(500).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
+                                    res.status(400).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
                                 });
                             }
                         }).catch((error) => {
                             console.error(error);
-                            res.status(500).send('퀘스트 종료일 운동 기록 조회 중 오류가 발생했습니다.');
+                            res.status(400).send('퀘스트 종료일 운동 기록 조회 중 오류가 발생했습니다.');
                         });
                     }
                     // 이전 날의 운동기록이 없다면
@@ -555,17 +556,113 @@ exports.get_attendance_quest = (req, res) => {
                     }).catch((error) => {
                         // 에러 처리
                         console.error(error);
-                        res.status(500).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
+                        res.status(400).send('퀘스트 상태 변경 중 오류가 발생했습니다.');
                     });
                 }
             }).catch((error) => {
                 console.error(error);
-                res.status(500).send('이전 날의 운동 기록 조회 중 오류가 발생했습니다.');
+                res.status(400).send('이전 날의 운동 기록 조회 중 오류가 발생했습니다.');
             });
         }
     }).catch((error) => {
         console.error(error);
-        res.status(500).send('출석 퀘스트 정보 조회 중 오류가 발생했습니다.');
+        res.status(400).send('출석 퀘스트 정보 조회 중 오류가 발생했습니다.');
+    });
+
+    // 퀘스트 상태에 따라 퀘스트 생성
+    Quest_record.findOne({
+        where: {
+            user_num: req.user.user_num,
+        },
+        order: [
+            ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
+        ]
+    })
+        .then((recent_quest) => {
+            //  가져오기 성공 메시지 전송
+            if (!recent_quest) {
+                // recent_quest가 없다면 quest_db에서 quest_num=1을 찾아서 quest_record_db에 미진행으로 저장
+                Quest_record.create({
+                    user_num: req.user.user_num,
+                    quest_num: 1,
+                    quest_state: '미진행'
+                }).then((newRecord) => {
+                    res.status(200).send({data: newRecord, message: "새로운 퀘스트가 등록되었습니다."});
+                })
+                    .catch((err) => {
+                        console.log(err);
+                        res.status(400).send({message: "새로운 퀘스트 등록이 실패했습니다."});
+                    });
+            } else {
+                // 상태 변경날의 다음 날이 되었으면 퀘스트 생성처리
+                if (currentDateString > recent_quest.state_update_date) {
+                    // quest_record 상태에 따라 처리
+                    switch (recent_quest.quest_state) {
+                        case '완료':
+                            // 완료한 퀘스트의 다음 퀘스트를 찾아서 미진행으로 저장
+                            Quest.findOne({
+                                where: {quest_num: recent_quest.quest_num + 1}
+                            }).then((nextQuest) => {
+                                if (nextQuest && nextQuest.quest_num <= 5) {
+                                    Quest_record.create({
+                                        quest_num: nextQuest.quest_num,
+                                        user_num: req.user.user_num,
+                                        quest_state: '미진행',
+                                        state_update_date: currentDateString,
+                                    }).then((newRecord) => {
+                                        res.status(200).send({message: "새로운 퀘스트가 등록되었습니다."});
+                                    }).catch((err) => {
+                                            console.log(err);
+                                            res.status(400).send({message: "새로운 퀘스트 등록이 실패했습니다."});
+                                        });
+                                } else {
+                                    // 다음 퀘스트가 없는 경우 (예: 마지막 퀘스트를 완료한 경우)
+                                    res.status(200).send({message: "모든 퀘스트를 완료했습니다."});
+                                }
+                            });
+                            break;
+                        case '실패':
+                            // (실패) 다음 날이 되었으면 실패한 퀘스트를 미진행으로 다시 저장
+                            Quest_record.create({
+                                quest_num: recent_quest.quest_num,
+                                user_num: req.user.user_num,
+                                quest_state: '미진행',
+                                state_update_date: currentDateString,
+                            }).then((newRecord) => {
+                                res.status(200).send({message: "실패한 퀘스트가 재등록이 되었습니다."});
+                            }).catch((err) => {
+                                    console.log(err);
+                                    res.status(400).send({message: "실패한 퀘스트 재등록이 실패했습니다."});
+                                });
+                            break;
+                        default:
+                            // 진행중이거나 미진행인 경우 변경 없음
+                            res.status(200).send({message: "퀘스트가 진행중이거나 미진행이기에 변동사항이 없습니다."});
+                            break;
+                    }
+                } else {
+                    res.status(200).send({message: "아직 다음날이 되지 않았습니다."});
+                }
+            }
+        })
+        .catch((err) => {
+            console.log(err);
+            res.status(400).send({message: "최근 퀘스트 조회 중 오류가 발생했습니다."});
+        });
+
+    // 일일 퀘스트 가져오기 (가장 최근 퀘스트)
+    Quest_record.findOne({
+        where: {
+            user_num: req.user.user_num,
+        },
+        order: [
+            ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
+        ]
+    }).then((recent_quest) => {
+        res.status(200).send({data: recent_quest, message: "일일 퀘스트 가져오기 성공"});
+    }).catch((error) => {
+        console.error(error);
+        res.status(400).send('가장 최근 퀘스트 조회 중 오류가 발생했습니다.');
     });
 };
 
