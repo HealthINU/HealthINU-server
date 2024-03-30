@@ -458,8 +458,8 @@ exports.get_attendance_quest = (req, res) => {
             // 이전 날의 운동기록이 있는지 확인
             Record.findOne({
                 where: {
-                    record_date: currentDateString,
                     user_num: req.user.user_num,
+                    record_date: previousDateString,
                 },
             }).then((record) => {
                 console.log(2);

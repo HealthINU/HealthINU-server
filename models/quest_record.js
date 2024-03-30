@@ -36,7 +36,7 @@ class Quest_record extends Sequelize.Model {
                     allowNull: false,
                 },
                 state_update_date: {
-                    type: Sequelize.DATE,
+                    type: Sequelize.DATEONLY,
                     allowNull: true,
                 },
             },

@@ -12,7 +12,7 @@ class Record extends Sequelize.Model {
           allowNull: false,
         },
         record_date: {
-          type: Sequelize.DATE,
+          type: Sequelize.DATEONLY,
           allowNull: false,
         },
         user_num: {
