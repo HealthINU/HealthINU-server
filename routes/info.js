@@ -14,8 +14,7 @@ const { add_own } = require("../controllers/info");
 const { delete_record } = require("../controllers/info");
 const { delete_own } = require("../controllers/info");
 const { get_rank } = require("../controllers/user");
-//const { check_attendance_quest } = require("../controllers/info");
-const { attendance_quest } = require("../controllers/info");
+const { get_attendance_quest } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -130,8 +129,7 @@ router.get(
 router.get(
     "/quest",
     passport.authenticate("jwt", { session: false, failWithError: true }),
-    //check_attendance_quest,
-    attendance_quest
+    get_attendance_quest
 );
 
 module.exports = router;
