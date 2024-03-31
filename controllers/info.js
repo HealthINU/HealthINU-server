@@ -118,8 +118,6 @@ exports.get_record = (req, res) => {
 exports.add_record = async (req, res) => {
     // 요청에서 정보 추출
     const recordInfo = req.body;
-            res.status(200).send({message: "Success"});
-        } catch (err) {
     // 운동기록에 따른 경험치
     const exp = recordInfo.record_weight * recordInfo.record_count;
     // record_db에 기록 추가
