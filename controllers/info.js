@@ -118,27 +118,23 @@ exports.get_record = (req, res) => {
 exports.add_record = async (req, res) => {
     // 요청에서 정보 추출
     const recordInfo = req.body;
-
-    // 요청 본문의 user_num과 req.user.user_num이 일치하는지 확인(검증)
-    if (recordInfo.user_num !== req.user.user_num) {
-        // 만약 토큰정보와 추가할 유저 정보가 일치하지 않으면 에러 메시지 전송(부적절한 접근)
-        res.status(400).send({message: "Invalid access"})
-    } else {
-        // 운동기록에 따른 경험치
-        const exp = recordInfo.record_weight * recordInfo.record_count;
-        // 일치하면 record_db에 기록 추가
-        try {
-            await Record.create(recordInfo);
-            // 경험치 반영
-            req.user = await req.user.update({user_exp: req.user.user_exp + exp});
-            // 경험치에 따른 레벨 시스템
-            await req.user.update({user_level: 1 + ~~(req.user.user_exp / 100000)});
-            // 성공 메시지 전송
             res.status(200).send({message: "Success"});
         } catch (err) {
-            // 실패 메시지 전송
-            res.status(400).send({message: "Server error"});
-        }
+    // 운동기록에 따른 경험치
+    const exp = recordInfo.record_weight * recordInfo.record_count;
+    // record_db에 기록 추가
+    try {
+        recordInfo.user_num = req.user.user_num;
+        await Record.create(recordInfo);
+        // 경험치 반영
+        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
+        // 경험치에 따른 레벨 시스템
+        await req.user.update({user_level: 1 + ~~(req.user.user_exp / 100000)});
+        // 성공 메시지 전송
+        res.status(200).send({message: "Success"});
+    } catch (err) {
+        // 실패 메시지 전송
+        res.status(400).send({message: "Server error"});
     }
 };
 
