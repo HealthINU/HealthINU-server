@@ -15,6 +15,8 @@ const { delete_record } = require("../controllers/info");
 const { delete_own } = require("../controllers/info");
 const { get_rank } = require("../controllers/user");
 const { get_attendance_quest } = require("../controllers/info");
+const { accept_attendance_quest } = require("../controllers/info");
+const { finish_attendance_quest } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -124,12 +126,28 @@ router.get(
     get_rank
 );
 
-// GET /info/quest
-// 퀘스트 정보 가져오기
+// GET /info/attendance_quest
+// 출석 퀘스트 정보 가져오기
 router.get(
-    "/quest",
+    "/attendance_quest",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     get_attendance_quest
+);
+
+// GET /info/accept_quest
+// 출석 퀘스트 수락하기
+router.get(
+    "/accept_attendance_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    accept_attendance_quest
+);
+
+// GET /info/finish_attendance_quest
+// 퀘스트 완료하기
+router.get(
+    "/finish_attendance_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    finish_attendance_quest
 );
 
 module.exports = router;
