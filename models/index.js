@@ -38,6 +38,7 @@ const models = {
     User: User,
     Equipment: Equipment,
     Own: Own,
+    Record: Record,
     Quest: Quest,
     Quest_record: Quest_record
 };

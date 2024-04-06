@@ -51,6 +51,8 @@ class Equipment extends Sequelize.Model {
   }
   static associate(models) {
       Equipment.hasMany(models.Own, {foreignKey: 'equipment_num'});
+      Equipment.hasMany(models.Quest, {foreignKey: 'equipment_num'});
+      Equipment.hasMany(models.Record, {foreignKey: 'equipment_num'});
   }
 }
 

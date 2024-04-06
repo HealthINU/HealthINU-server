@@ -28,6 +28,10 @@ class Quest extends Sequelize.Model {
                     type: Sequelize.INTEGER,
                     allowNull: true,
                 },
+                equipment_num: {
+                    type: Sequelize.INTEGER,
+                    allowNull: true,
+                }
             },
             {
                 sequelize,
@@ -43,7 +47,8 @@ class Quest extends Sequelize.Model {
         );
     }
     static associate(models) {
-        Quest.hasMany(models.Quest_record, {foreignKey: 'quest_num'});
+        Quest.hasMany(models.Quest_record, {foreignKey: 'quest_num'})
+        Quest.belongsTo(models.Equipment, {foreignKey: 'equipment_num'})
     }
 }
 

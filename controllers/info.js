@@ -4,6 +4,8 @@ const Record = require("../models/record");
 const Quest = require("../models/quest");
 const Quest_record = require("../models/quest_record");
 const {Op} = require("sequelize");
+const moment = require('moment');
+const {Sequelize} = require("sequelize");
 
 // 운동 정보 가져오기
 exports.get_equipment = (req, res) => {
@@ -291,6 +293,9 @@ exports.get_attendance_quest = async (req, res) => {
         const process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
+                quest_num: {
+                    [Op.lte]: 5 // quest_num이 5 이하인 조건
+                },
                 quest_state: '진행',
             },
         });
@@ -300,7 +305,7 @@ exports.get_attendance_quest = async (req, res) => {
             previousDate.setDate(currentDate.getDate() - 1);
             // 이전 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
             const previousDateString = getDateStringInKST(previousDate);
-            console.log(previousDateString);
+            console.log(currentDateString - previousDateString);
             // 출석 퀘스트 종료일이 지나지 않았다면
             if (currentDateString <= process_quest.quest_end_date) {
                 // 이전 날의 운동기록이 있는지 확인
@@ -388,6 +393,9 @@ exports.get_attendance_quest = async (req, res) => {
         const recent_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
+                quest_num: {
+                    [Op.lte]: 5 // quest_num이 5 이하인 조건
+                },
             },
             order: [
                 ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
@@ -412,6 +420,7 @@ exports.get_attendance_quest = async (req, res) => {
                         const nextQuest = await Quest.findOne({
                             where: {quest_num: recent_quest.quest_num + 1}
                         });
+                        console.log(nextQuest);
                         if (nextQuest && nextQuest.quest_num <= 5) {
                             await Quest_record.create({
                                 quest_num: nextQuest.quest_num,
@@ -447,15 +456,64 @@ exports.get_attendance_quest = async (req, res) => {
         const today_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
+                quest_num: {
+                    [Op.lte]: 5 // quest_num이 5 이하인 조건
+                },
             },
             order: [
                 ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
-            ]
+            ],
+            include: [{
+                model: Quest, // quest_db와 조인
+            }]
         });
-        res.status(200).send({data: today_quest, message: "일일 퀘스트 가져오기 성공"});
+        res.status(200).send({data: today_quest, message: "출석 퀘스트 가져오기 성공"});
     } catch (error) {
         console.error(error);
-        res.status(400).send('일일 퀘스트 정보 가져오기 도중 오류가 발생했습니다.')
+        res.status(400).send('출석 퀘스트 정보 가져오기 도중 오류가 발생했습니다.')
+    }
+}
+
+// 출석일 가져오기
+exports.get_attendance_day = async (req, res) => {
+    let attendance_day = 0; // 출석일 0으로 초기화
+    let attendance_rate = 0; // 출석률 0으로 초기화
+    // 현재 날짜 생성 (연-월-일만 고려)
+    const today = new Date();
+    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+    const currentDateString = getDateStringInKST(currentDate);
+    // 진행중인 퀘스트 가져오기
+    const process_quest = await Quest_record.findOne({
+        where: {
+            user_num: req.user.user_num,
+            quest_num: {
+                [Op.lte]: 5 // quest_num이 5 이하인 조건
+            },
+            quest_state: '진행',
+        },
+    });
+    // 진행중인 출석 퀘스트가 있다면
+    if (process_quest) {
+        attendance_day = moment(currentDateString).diff(moment(process_quest.quest_start_date), 'days');
+        console.log(attendance_day);
+        const today_record = await Record.findOne({
+            where: {
+                record_date: currentDateString,
+                user_num: req.user.user_num,
+            },
+        });
+        // 오늘 운동기록이 있다면
+        if (today_record) {
+            attendance_day += 1;
+        }
+        attendance_rate = Math.round(attendance_day/moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days')*100);
+        res.status(200).send({data: {attendance_day: attendance_day, attendance_rate: attendance_rate}, message: "출석일 가져오기 성공"});
+    }
+    // 진행중인 출석 퀘스트가 없다면
+    else {
+        console.log('진행중인 출석 퀘스트가 없습니다.');
+        res.status(200).send({data: {attendance_day: 0, attendance_rate: 0}, message: "진행중인 출석 퀘스트가 없습니다."});
     }
 }
 
@@ -471,6 +529,9 @@ exports.accept_attendance_quest = async (req, res) => {
         const not_process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
+                quest_num: {
+                    [Op.lte]: 5 // quest_num이 5 이하인 조건
+                },
                 quest_state: '미진행',
             },
             include: [{
@@ -511,8 +572,14 @@ exports.finish_attendance_quest = async (req, res) => {
         const achieve_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
+                quest_num: {
+                    [Op.lte]: 5 // quest_num이 5 이하인 조건
+                },
                 quest_state: '달성',
             },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }]
         });
         // 미진행 퀘스트의 상태를 진행상태로 변경
         await Quest_record.update(
@@ -522,9 +589,434 @@ exports.finish_attendance_quest = async (req, res) => {
             },
             {where: {quest_record_num: achieve_quest.quest_record_num}}
         );
+        // 퀘스트 완료에 따른 보상 경험치 반영
+        const exp = achieve_quest.Quest.quest_reward;
+        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
         res.status(200).send('퀘스트 완료하기가 처리되었습니다.');
     } catch (error) {
         console.error(error);
-        res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.')
+        res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.');
+    }
+}
+
+// 운동 퀘스트 정보 가져오기
+exports.get_exercise_quest = async (req, res) => {
+    try {
+        // 현재 날짜 생성 (연-월-일만 고려)
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+        const currentDateString = getDateStringInKST(currentDate);
+        console.log(currentDateString);
+
+        // 운동 퀘스트 수행여부 (1)
+        const process_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: {
+                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
+                },
+                quest_state: '진행',
+            },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }]
+        });
+        // 진행중인 운동 퀘스트가 있다면
+        if (process_quest) {
+            // 해당 운동기구에 대한 오늘 기록을 가져온다.
+            const today_record = await Record.findAll({
+                where: {
+                    user_num: req.user.user_num,
+                    record_date: currentDateString,
+                    equipment_num: process_quest.Quest.equipment_num,
+                },
+            });
+
+            // 해당 운동기구의 오늘 총 볼륨
+            let total_volume = 0;
+            today_record.forEach(record => {
+                total_volume += record.record_count * record.record_weight;
+            });
+
+            // 운동 퀘스트 필요조건을 넘었다면
+            if (total_volume >= process_quest.Quest.quest_requirement) {
+                // process_quest의 상태를 달성상태로 변경
+                await Quest_record.update({quest_state: '달성', state_update_date: currentDateString},
+                    {
+                        where: {quest_record_num: process_quest.quest_record_num},
+                    }
+                );
+            }
+            // 운동 퀘스트 필요조건을 못 넘었다면
+            else {
+                console.log('아무것도 안함');
+            }
+            // 진행중인 퀘스트가 없다면
+        } else {
+            console.log('아무것도 안함');
+        }
+
+        // 퀘스트 상태에 따라 퀘스트 생성 (2)
+        const recent_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: {
+                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
+                },
+            },
+            order: [
+                ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
+            ]
+        });
+        // recent_quest가 없다면 새로운 운동 퀘스트 만들기
+        if (!recent_quest) {
+            await createExerciseQuest(req);
+        } else {
+            // 상태 변경날의 다음 날이 되었으면 퀘스트 생성처리
+            if (currentDateString > recent_quest.state_update_date) {
+                // quest_record 상태에 따라 처리
+                switch (recent_quest.quest_state) {
+                    case '완료':
+                        // 완료되었으면 새로운 운동 퀘스트 만들기
+                        await createExerciseQuest(req);
+                        break;
+                    default:
+                        // 진행중이거나 미진행이거나 달성상태의 경우 변경 없음
+                        console.log("퀘스트가 진행중이거나 미진행이거나 달성상태이기 때문에 변동사항이 없습니다.");
+                        break;
+                }
+            } else {
+                console.log("아직 다음날이 되지 않았습니다.");
+            }
+        }
+
+        // 운동 퀘스트 가져오기 (가장 최근 퀘스트) (3)
+        const today_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: {
+                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
+                },
+            },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }],
+            order: [
+                ['quest_record_num', 'DESC'] // quest_record_num 기준으로 내림차순 정렬 (가장 최근)
+            ]
+        });
+        res.status(200).send({data: today_quest, message: "운동 퀘스트 가져오기 성공"});
+    } catch (error) {
+        console.error(error);
+        res.status(400).send('운동 퀘스트 정보 가져오기 도중 오류가 발생했습니다.')
+    }
+}
+
+// 운동 퀘스트 생성 알고리즘
+async function createExerciseQuest(req) {
+    // 현재 날짜 생성 (연-월-일만 고려)
+    const today = new Date();
+    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+    const currentDateString = getDateStringInKST(currentDate);
+    console.log(currentDateString);
+
+    // 유저의 레벨에 따라서 필요조건(운동볼륨) 부여
+    let quest_requirement = 0;
+    if (req.user.user_level <= 10) {
+        quest_requirement = 500;
+    } else if (req.user.user_level <= 20) {
+        quest_requirement = 1000;
+    } else if (req.user.user_level <= 30) {
+        quest_requirement = 1500;
+    } else if (req.user.user_level <= 40) {
+        quest_requirement = 2000;
+    } else {
+        quest_requirement = 2500;
+    }
+
+    // 모든 운동 부위 가져오기
+    const allCategories = await Equipment.findAll({
+        attributes: [
+            [Sequelize.fn('DISTINCT', Sequelize.col('equipment_category')), 'category'],
+        ],
+        raw: true,
+    });
+    // 사용자가 운동한 기록에서 부위별로 사용한 운동기구 찾기
+    const user_record = await Record.findAll({
+        where: {
+            user_num: req.user.user_num,
+        },
+        include: [{
+            model: Equipment, // equipment_db와 조인
+            attributes: ['equipment_num', 'equipment_category'],
+        }]
+    });
+
+    let usedCategories = user_record.map(record => record['Equipment.equipment_category']);
+    usedCategories = [...new Set(usedCategories)]; // 카테고리 중복 제거
+
+    // 모든 부위 중에서 아직 사용하지 않은 부위 찾기
+    const unusedCategories = allCategories.filter(category => !usedCategories.includes(category.category));
+
+    // 사용되지 않은 부위가 있다면
+    if (unusedCategories.length > 0) {
+        // 사용하지 않은 부위 중 랜덤으로 하나 선택하기
+        const randomCategoryIndex = Math.floor(Math.random() * unusedCategories.length);
+        console.log(randomCategoryIndex);
+        const selectedCategory = unusedCategories[randomCategoryIndex].category;
+        console.log(selectedCategory);
+        // 랜덤으로 선택된 부위에서 사용하지 않은 운동기구 찾기
+        const allEquipmentsInCategory = await Equipment.findAll({
+            where: {equipment_category: selectedCategory},
+            raw: true,
+        });
+        // 랜덤으로 선택된 부위에서 사용한 운동기구 equipment_num 배열
+        const usedEquipmentsInCategory = user_record
+            .filter(record => record['Equipment.equipment_category'] === selectedCategory)
+            .map(record => record['Equipment.equipment_num']);
+        // 랜덤으로 선택된 부위에서 사용하지 않은 운동기구 equipment_num 배열
+        const unusedEquipmentsInCategory = allEquipmentsInCategory.filter(equipment => !usedEquipmentsInCategory.includes(equipment.equipment_num));
+        // 사용하지 않은 부위 중 사용하지 않은 운동기구가 있다면
+        if (unusedEquipmentsInCategory.length > 0) {
+            // 사용하지 않은 운동기구 중 랜덤으로 하나 선택하기
+            const randomEquipmentIndex = Math.floor(Math.random() * unusedEquipmentsInCategory.length);
+            const selectedEquipment = unusedEquipmentsInCategory[randomEquipmentIndex];
+            // 운동 퀘스트 등록하기
+            const exercise_quest = await Quest.create({
+                quest_category: 'exercise',
+                quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement} 도전하기`,
+                quest_reward: quest_requirement * 10,
+                quest_requirement: quest_requirement,
+                equipment_num: selectedEquipment.equipment_num
+            });
+            // 해당 운동 퀘스트 미진행으로 Quest_record_db에 저장
+            await Quest_record.create({
+                quest_num: exercise_quest.quest_num,
+                user_num: req.user.user_num,
+                quest_state: '미진행',
+                state_update_date: currentDateString,
+            });
+        }
+        // 사용되지 않은 부위가 없다면 (모든 부위를 다 했다면)
+    } else {
+        // 사용자 기록에서 부위별 총 볼륨 계산
+        let categoryVolume = {};
+        user_record.forEach(record => {
+            const category = record['Equipment.equipment_category'];
+            const volume = record['record_weight'] * record['record_count'];
+            if (category in categoryVolume) {
+                categoryVolume[category] += volume;
+            } else {
+                categoryVolume[category] = volume;
+            }
+        });
+
+        // 가장 적게 운동한 부위 찾기
+        let minVolume = Infinity;
+        let leastUsedCategory = null;
+        for (const [category, volume] of Object.entries(categoryVolume)) {
+            if (volume < minVolume) {
+                minVolume = volume;
+                leastUsedCategory = category;
+            }
+        }
+
+        // 해당 부위에서 사용하지 않은 운동기구 찾기
+        const allEquipmentsInLeastUsedCategory = await Equipment.findAll({
+            where: {equipment_category: leastUsedCategory},
+            raw: true,
+        });
+        const usedEquipmentsInLeastUsedCategory = user_record
+            .filter(record => record['Equipment.equipment_category'] === leastUsedCategory)
+            .map(record => record['Equipment.equipment_num']);
+        const unusedEquipmentsInLeastUsedCategory = allEquipmentsInLeastUsedCategory.filter(equipment => !usedEquipmentsInLeastUsedCategory.includes(equipment.equipment_num));
+
+        // 사용하지 않은 운동기구가 있으면, 그 중 하나를 랜덤으로 선택하여 운동 퀘스트 생성
+        if (unusedEquipmentsInLeastUsedCategory.length > 0) {
+            const randomEquipmentIndex = Math.floor(Math.random() * unusedEquipmentsInLeastUsedCategory.length);
+            const selectedEquipment = unusedEquipmentsInLeastUsedCategory[randomEquipmentIndex];
+            // 운동 퀘스트 등록하기
+            const exercise_quest = await Quest.create({
+                quest_category: 'exercise',
+                quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement} 도전하기`,
+                quest_reward: quest_requirement * 10,
+                quest_requirement: quest_requirement,
+                equipment_num: selectedEquipment.equipment_num
+            });
+            // 해당 운동 퀘스트 미진행으로 Quest_record_db에 저장
+            await Quest_record.create({
+                quest_num: exercise_quest.quest_num,
+                user_num: req.user.user_num,
+                quest_state: '미진행',
+                state_update_date: currentDateString,
+            });
+
+            // 사용하지 않은 운동기구가 없으면 운동기구들 중에서 가장 안 한 운동기구를 선택하여 운동 퀘스트 생성
+        } else {
+            // 해당 부위의 운동기구별 총 볼륨 계산
+            let equipmentVolume = {};
+            user_record.forEach(record => {
+                if (record['Equipment.equipment_category'] === leastUsedCategory) {
+                    const equipmentNum = record['Equipment.equipment_num'];
+                    const volume = record['record_weight'] * record['record_count'];
+                    if (equipmentNum in equipmentVolume) {
+                        equipmentVolume[equipmentNum] += volume;
+                    } else {
+                        equipmentVolume[equipmentNum] = volume;
+                    }
+                }
+            });
+
+            // 가장 적게 사용된 운동기구 찾기
+            let minVolume = Infinity;
+            let leastUsedEquipmentNum = null;
+            for (const [equipmentNum, volume] of Object.entries(equipmentVolume)) {
+                if (volume < minVolume) {
+                    minVolume = volume;
+                    leastUsedEquipmentNum = equipmentNum;
+                }
+            }
+
+            // 가장 적게 사용된 운동기구를 찾은 경우 해당 운동기구에 대한 운동 퀘스트 생성
+            if (leastUsedEquipmentNum !== null) {
+                const selectedEquipment = allEquipmentsInLeastUsedCategory.find(equipment => equipment.equipment_num === leastUsedEquipmentNum);
+
+                // 가장 적게 사용된 운동기구에 대해 날짜별 볼륨 합산
+                let dailyTotalVolumes = {}; // 날짜별 볼륨 합산 저장 객체
+
+                user_record.forEach(record => {
+                    if (record['Equipment.equipment_num'] === leastUsedEquipmentNum) {
+                        const date = record['record_date']; // 날짜 가져오기
+                        const volume = record['record_weight'] * record['record_count']; // 해당 기록의 볼륨 계산
+
+                        // 해당 날짜에 대한 기록이 이미 있다면 볼륨 합산
+                        if (dailyTotalVolumes[date]) {
+                            dailyTotalVolumes[date] += volume;
+                        } else {
+                            // 해당 날짜의 첫 기록이라면 객체에 추가
+                            dailyTotalVolumes[date] = volume;
+                        }
+                    }
+                });
+
+                // 모든 날짜의 볼륨 합산 중 최대값 찾기
+                let maxDailyTotalVolume = 0;
+                Object.values(dailyTotalVolumes).forEach(totalVolume => {
+                    if (totalVolume > maxDailyTotalVolume) {
+                        maxDailyTotalVolume = totalVolume;
+                    }
+                });
+
+                // quest_requirement 계산 (이전 최고기록에서 레벨에 따라 추가)
+                if (req.user.user_level <= 10) {
+                    quest_requirement = maxDailyTotalVolume * 1.05; // 5퍼센트 더 많이
+                } else if (req.user.user_level <= 20) {
+                    quest_requirement = maxDailyTotalVolume * 1.06; // 6퍼센트 더 많이
+                } else if (req.user.user_level <= 30) {
+                    quest_requirement = maxDailyTotalVolume * 1.07; // 7퍼센트 더 많이
+                } else if (req.user.user_level <= 40) {
+                    quest_requirement = maxDailyTotalVolume * 1.08; // 8퍼센트 더 많이
+                } else {
+                    quest_requirement = maxDailyTotalVolume * 1.1; // 10퍼센트 더 많이
+                }
+
+                // 운동 퀘스트 등록하기
+                const exercise_quest = await Quest.create({
+                    quest_category: 'exercise',
+                    quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement - maxDailyTotalVolume} 늘리기`,
+                    quest_reward: quest_requirement * 10,
+                    quest_requirement: quest_requirement,
+                    equipment_num: selectedEquipment.equipment_num
+                });
+
+                // 해당 운동 퀘스트 미진행으로 Quest_record_db에 저장
+                await Quest_record.create({
+                    quest_num: exercise_quest.quest_num,
+                    user_num: req.user.user_num,
+                    quest_state: '미진행',
+                    state_update_date: currentDateString,
+                });
+            }
+        }
+    }
+}
+
+// 운동 퀘스트 수락하기 (미진행 -> 진행)
+exports.accept_exercise_quest = async (req, res) => {
+    try {
+        // 현재 날짜 생성 (연-월-일만 고려)
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+        const currentDateString = getDateStringInKST(currentDate);
+        // 현재 미진행 퀘스트 가져오기
+        const not_process_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: {
+                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
+                },
+                quest_state: '미진행',
+            },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }]
+        });
+        // 미진행 퀘스트의 상태를 진행상태로 변경
+        await Quest_record.update(
+            {
+                quest_state: '진행',
+                quest_start_date: currentDateString,
+                state_update_date: currentDateString,
+            },
+            {where: {quest_record_num: not_process_quest.quest_record_num}}
+        );
+        res.status(200).send('퀘스트 수락하기가 처리되었습니다.');
+    } catch (error) {
+        console.error(error);
+        res.status(400).send('퀘스트 수락하기 도중 오류가 발생했습니다.')
+    }
+}
+
+// 운동 퀘스트 완료하기 (달성 -> 완료)
+exports.finish_exercise_quest = async (req, res) => {
+    try {
+        // 현재 날짜 생성 (연-월-일만 고려)
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+        const currentDateString = getDateStringInKST(currentDate);
+        // 현재 달성 퀘스트 가져오기
+        const achieve_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: {
+                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
+                },
+                quest_state: '달성',
+            },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }]
+        });
+        // 미진행 퀘스트의 상태를 진행상태로 변경
+        await Quest_record.update(
+            {
+                quest_state: '완료',
+                quest_end_date: currentDateString,
+                state_update_date: currentDateString,
+            },
+            {where: {quest_record_num: achieve_quest.quest_record_num}}
+        );
+        // 퀘스트 완료에 따른 보상 경험치 반영
+        const exp = achieve_quest.Quest.quest_reward;
+        console.log(exp);
+        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
+        res.status(200).send('퀘스트 완료하기가 처리되었습니다.');
+    } catch (error) {
+        console.error(error);
+        res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.');
     }
 }

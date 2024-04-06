@@ -46,6 +46,11 @@ class Record extends Sequelize.Model {
       }
     );
   }
+    // 외래키 설정
+    static associate(models) {
+        Record.belongsTo(models.Equipment, {foreignKey: 'equipment_num'})
+        Record.belongsTo(models.User, {foreignKey: 'user_num'})
+    }
 }
 
 module.exports = Record;

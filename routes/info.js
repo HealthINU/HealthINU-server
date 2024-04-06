@@ -15,8 +15,12 @@ const { delete_record } = require("../controllers/info");
 const { delete_own } = require("../controllers/info");
 const { get_rank } = require("../controllers/user");
 const { get_attendance_quest } = require("../controllers/info");
+const { get_attendance_day } = require("../controllers/info");
 const { accept_attendance_quest } = require("../controllers/info");
 const { finish_attendance_quest } = require("../controllers/info");
+const { get_exercise_quest } = require("../controllers/info");
+const { accept_exercise_quest } = require("../controllers/info");
+const { finish_exercise_quest } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -134,7 +138,15 @@ router.get(
     get_attendance_quest
 );
 
-// GET /info/accept_quest
+// GET /info/attendance_day
+// 출석일 가져오기
+router.get(
+    "/attendance_day",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_attendance_day
+);
+
+// GET /info/accept_attendance_quest
 // 출석 퀘스트 수락하기
 router.get(
     "/accept_attendance_quest",
@@ -148,6 +160,30 @@ router.get(
     "/finish_attendance_quest",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     finish_attendance_quest
+);
+
+// GET /info/exercise_quest
+// 운동 퀘스트 정보 가져오기
+router.get(
+    "/exercise_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_exercise_quest
+);
+
+// GET /info/accept_exercise_quest
+// 운동 퀘스트 수락하기
+router.get(
+    "/accept_exercise_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    accept_exercise_quest
+);
+
+// GET /info/finish_exercise_quest
+// 운동 퀘스트 완료하기
+router.get(
+    "/finish_exercise_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    finish_exercise_quest
 );
 
 module.exports = router;
