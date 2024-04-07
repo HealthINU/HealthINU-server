@@ -21,6 +21,7 @@ const { finish_attendance_quest } = require("../controllers/info");
 const { get_exercise_quest } = require("../controllers/info");
 const { accept_exercise_quest } = require("../controllers/info");
 const { finish_exercise_quest } = require("../controllers/info");
+const { add_body_info } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -184,6 +185,14 @@ router.get(
     "/finish_exercise_quest",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     finish_exercise_quest
+);
+
+// POST /info/body
+// 신체 정보 추가하기 (Before/After 기능)
+router.post(
+    "/body",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    add_body_info
 );
 
 module.exports = router;

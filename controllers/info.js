@@ -3,9 +3,12 @@ const Own = require("../models/own");
 const Record = require("../models/record");
 const Quest = require("../models/quest");
 const Quest_record = require("../models/quest_record");
+const Body = require("../models/body");
 const {Op} = require("sequelize");
 const moment = require('moment');
 const {Sequelize} = require("sequelize");
+const multer = require("multer");
+
 
 // 운동 정보 가져오기
 exports.get_equipment = (req, res) => {
@@ -1020,3 +1023,58 @@ exports.finish_exercise_quest = async (req, res) => {
         res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.');
     }
 }
+
+// Multer 설정
+const storage = multer.diskStorage({
+    destination: function(req, file, cb) {
+        cb(null, "body_uploads"); // 파일이 저장될 서버 상의 위치
+    },
+    filename: function(req, file, cb) {
+        const uniqueSuffix = req.user.user_num + req.user.user_name + "-" + Date.now();
+        cb(null, uniqueSuffix + '-' + file.originalname);
+    }
+});
+
+const upload = multer({ storage: storage }).single("image");
+
+// 운동 Before/After 신체 정보 저장하기
+exports.add_body_info = async (req, res) => {
+    // 현재 날짜 생성 (연-월-일만 고려)
+    const today = new Date();
+    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+    const currentDateString = getDateStringInKST(currentDate);
+    upload(req, res, async (error) => {
+        if (error) {
+            // Multer 업로드 에러 처리
+            return res.status(500).json({ message: "사진 업로드 중 오류가 발생했습니다.", error: error.message });
+        }
+
+        if (!req.file) {
+            // 사진이 업로드되지 않았을 때의 에러 처리
+            return res.status(400).json({ message: "업로드된 사진이 없습니다." });
+        }
+
+        // req.body에서 키와 몸무게 정보 추출
+        const { height, weight } = req.body;
+
+        try {
+            const imagePath = req.file.path;
+
+            const newBodyInfo = await Body.create({
+                user_num: req.user.user_num,
+                body_date: currentDateString,
+                body_height: height,
+                body_weight: weight,
+                body_bmi: weight / ((height / 100) ** 2),
+                body_image: imagePath,
+            });
+
+            return res.json({ message: "사진이 성공적으로 업로드되었습니다." });
+        } catch (dbError) {
+            // 데이터베이스 에러 처리
+            console.error(dbError);
+            return res.status(500).json({ message: "데이터베이스 저장 중 오류가 발생했습니다." });
+        }
+    });
+};

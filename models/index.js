@@ -12,6 +12,7 @@ const Own = require("./own");
 const Record = require("./record");
 const Quest = require("./quest");
 const Quest_record = require("./quest_record");
+const Body = require("./body");
 
 const db = {};
 //  시퀄라이즈 정보 설정
@@ -32,6 +33,7 @@ Own.initiate(sequelize);
 Record.initiate(sequelize);
 Quest.initiate(sequelize);
 Quest_record.initiate(sequelize);
+Body.initiate(sequelize);
 
 //  associate 메소드 호출
 const models = {
@@ -40,7 +42,8 @@ const models = {
     Own: Own,
     Record: Record,
     Quest: Quest,
-    Quest_record: Quest_record
+    Quest_record: Quest_record,
+    Body: Body,
 };
 Object.keys(models).forEach(key => {
     if ('associate' in models[key]) {
