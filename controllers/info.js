@@ -49,24 +49,20 @@ exports.get_own = (req, res) => {
 };
 
 // 소유 정보 추가하기
-exports.add_own = (req, res) => {
+exports.add_own = async (req, res) => {
     // 요청에서 정보 추출
     const ownInfo = req.body;
-    // 요청 본문의 user_num과 req.user.user_num이 일치하는지 확인(검증)
-    if (ownInfo.user_num !== req.user.user_num) {
-        // 만약 토큰정보와 추가할 유저 정보가 일치하지 않으면 에러 메시지 전송(부적절한 접근)
-        res.status(400).send({message: "Invalid access"})
+    // 유저 정보는 토큰에서 추출
+    ownInfo.user_num = req.user.user_num;
+    console.log(ownInfo);
+    // 소유 DB에 저장하기
+    const new_own = await Own.create(ownInfo);
+    if (new_own) {
+        // 추가 성공 메시지 전송
+        res.status(200).send({message: "Success"});
     } else {
-        // 일치하면 새로운 소유 정보 생성
-        Own.create(ownInfo)
-            .then((own) => {
-                // 추가 성공 메시지 전송
-                res.status(200).send({message: "Success"});
-            })
-            .catch((err) => {
-                // 추가 실패 메시지 전송
-                res.status(400).send({message: "Server error"});
-            });
+        // 추가 실패 메시지 전송
+        res.status(400).send({message: "Server error"});
     }
 };
 
@@ -357,7 +353,7 @@ exports.get_attendance_quest = async (req, res) => {
                             where: {quest_record_num: process_quest.quest_record_num},
                         });
                 }
-            // 출석 퀘스트 종료일이 지났다면
+                // 출석 퀘스트 종료일이 지났다면
             } else {
                 console.log(7);
                 const past_record = await Record.findOne({
@@ -387,7 +383,7 @@ exports.get_attendance_quest = async (req, res) => {
                     );
                 }
             }
-        // 진행중인 퀘스트가 없거나, 퀘스트 시작일이 지나지 않았으면
+            // 진행중인 퀘스트가 없거나, 퀘스트 시작일이 지나지 않았으면
         } else {
             console.log('아무것도 안함');
         }
@@ -412,7 +408,7 @@ exports.get_attendance_quest = async (req, res) => {
                 quest_state: '미진행',
                 state_update_date: currentDateString,
             });
-        // recent_quest가 있다면 상태에 따라 처리
+            // recent_quest가 있다면 상태에 따라 처리
         } else {
             // 상태 변경날의 다음 날이 되었으면 퀘스트 생성처리
             if (currentDateString > recent_quest.state_update_date) {
@@ -510,8 +506,11 @@ exports.get_attendance_day = async (req, res) => {
         if (today_record) {
             attendance_day += 1;
         }
-        attendance_rate = Math.round(attendance_day/moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days')*100);
-        res.status(200).send({data: {attendance_day: attendance_day, attendance_rate: attendance_rate}, message: "출석일 가져오기 성공"});
+        attendance_rate = Math.round(attendance_day / moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days') * 100);
+        res.status(200).send({
+            data: {attendance_day: attendance_day, attendance_rate: attendance_rate},
+            message: "출석일 가져오기 성공"
+        });
     }
     // 진행중인 출석 퀘스트가 없다면
     else {
@@ -1026,16 +1025,16 @@ exports.finish_exercise_quest = async (req, res) => {
 
 // Multer 설정
 const storage = multer.diskStorage({
-    destination: function(req, file, cb) {
+    destination: function (req, file, cb) {
         cb(null, "body_uploads"); // 파일이 저장될 서버 상의 위치
     },
-    filename: function(req, file, cb) {
+    filename: function (req, file, cb) {
         const uniqueSuffix = req.user.user_num + req.user.user_name + "-" + Date.now();
         cb(null, uniqueSuffix + '-' + file.originalname);
     }
 });
 
-const upload = multer({ storage: storage }).single("image");
+const upload = multer({storage: storage}).single("image");
 
 // 운동 Before/After 신체 정보 저장하기
 exports.add_body_info = async (req, res) => {
@@ -1047,16 +1046,16 @@ exports.add_body_info = async (req, res) => {
     upload(req, res, async (error) => {
         if (error) {
             // Multer 업로드 에러 처리
-            return res.status(500).json({ message: "사진 업로드 중 오류가 발생했습니다.", error: error.message });
+            return res.status(500).json({message: "사진 업로드 중 오류가 발생했습니다.", error: error.message});
         }
 
         if (!req.file) {
             // 사진이 업로드되지 않았을 때의 에러 처리
-            return res.status(400).json({ message: "업로드된 사진이 없습니다." });
+            return res.status(400).json({message: "업로드된 사진이 없습니다."});
         }
 
         // req.body에서 키와 몸무게 정보 추출
-        const { height, weight } = req.body;
+        const {height, weight} = req.body;
 
         try {
             const imagePath = req.file.path;
@@ -1070,11 +1069,11 @@ exports.add_body_info = async (req, res) => {
                 body_image: imagePath,
             });
 
-            return res.json({ message: "사진이 성공적으로 업로드되었습니다." });
+            return res.json({message: "사진이 성공적으로 업로드되었습니다."});
         } catch (dbError) {
             // 데이터베이스 에러 처리
             console.error(dbError);
-            return res.status(500).json({ message: "데이터베이스 저장 중 오류가 발생했습니다." });
+            return res.status(500).json({message: "데이터베이스 저장 중 오류가 발생했습니다."});
         }
     });
 };
