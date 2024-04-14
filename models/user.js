@@ -73,6 +73,7 @@ class User extends Sequelize.Model {
         User.hasMany(models.Own, {foreignKey: 'user_num'});
         User.hasMany(models.Quest_record, {foreignKey: 'user_num'});
         User.hasMany(models.Body, {foreignKey: 'user_num'});
+        User.hasMany(models.Division, {foreignKey: 'user_num'});
     }
 }
 

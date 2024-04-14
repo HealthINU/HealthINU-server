@@ -4,6 +4,7 @@ const Record = require("../models/record");
 const Quest = require("../models/quest");
 const Quest_record = require("../models/quest_record");
 const Body = require("../models/body");
+const Division = require("../models/division");
 const {Op} = require("sequelize");
 const moment = require('moment');
 const {Sequelize} = require("sequelize");
@@ -1076,4 +1077,85 @@ exports.add_body_info = async (req, res) => {
             return res.status(500).json({message: "데이터베이스 저장 중 오류가 발생했습니다."});
         }
     });
+};
+
+// 운동 Before/After 신체 정보 가져오기
+exports.get_body_info = async (req, res) => {
+    try {
+        // 현재 날짜 생성 (연-월-일만 고려)
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+        const currentDateString = getDateStringInKST(currentDate);
+        const before_body_info = await Body.findAll({
+            where: {
+                user_num: req.user.user_num,
+                body_date: {
+                    [Op.lt]: currentDateString // 오늘 미만 날짜로 조회
+                },
+            },
+            order: [
+                ['body_date', 'ASC'] // body_date를 기준으로 오름차순 정렬
+            ]
+        });
+        // 성공 메시지 전송
+        if (before_body_info.length > 0) {
+            res.status(200).json({ message: "신체 정보 가져오기 성공", data: before_body_info });
+        } else {
+            res.status(200).json({ message: "신체 정보가 없습니다.", data: []});
+        }
+    } catch (err) {
+        res.status(500).send({message: "Server error", error: err.message});
+    }
+};
+
+
+// 맞춤형 분할운동 분할 정보 저장하기
+exports.add_division_info = async (req, res) => {
+    try {
+        // 현재 날짜 생성 (연-월-일만 고려)
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
+        const currentDateString = getDateStringInKST(currentDate);
+        // 요청에서 정보 추출
+        const divisionInfo = req.body;
+        // 분할 정보에 user_num 추가
+        divisionInfo.user_num = req.user.user_num;
+        // 분할 정보에 분할 시작일 추가
+        divisionInfo.division_start_date = currentDateString;
+        const division_info = await Division.findOne({
+            where: {
+                user_num: req.user.user_num,
+            },
+        });
+        // 이미 분할 정보가 있는 경우 (덮어쓰기)
+        if (division_info) {
+            // 기존 분할 정보에 해당 분할 정보 덮어쓰기
+            const [updateCount] = await Division.update(
+                divisionInfo,
+                {where: {division_num: division_info.division_num}}
+            );
+            if (updateCount > 0) {
+                // 추가 성공 메시지 전송
+                res.status(200).send({message: "Success"});
+            } else {
+                // 추가 실패 메시지 전송
+                res.status(400).send({message: "Update error"});
+            }
+            // 분할 정보가 없는 경우 (새로쓰기)
+        } else {
+            // 분할 DB 해당 분할 정보 추가
+            const new_division_info = await Division.create(divisionInfo);
+            if (new_division_info) {
+                // 추가 성공 메시지 전송
+                res.status(200).send({message: "Success"});
+            } else {
+                // 추가 실패 메시지 전송
+                res.status(400).send({message: "Create error"});
+            }
+        }
+    } catch (err) {
+        res.status(500).send({message: "Server error", error: err.message});
+    }
 };

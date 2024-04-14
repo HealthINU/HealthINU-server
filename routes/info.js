@@ -22,6 +22,8 @@ const { get_exercise_quest } = require("../controllers/info");
 const { accept_exercise_quest } = require("../controllers/info");
 const { finish_exercise_quest } = require("../controllers/info");
 const { add_body_info } = require("../controllers/info");
+const { get_body_info } = require("../controllers/info");
+const { add_division_info } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -193,6 +195,22 @@ router.post(
     "/body",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     add_body_info
+);
+
+// GET /info/body
+// 과거 신체 정보 가져오기 (Before/After 기능)
+router.get(
+    "/body",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_body_info
+);
+
+// POST /info/division
+// 분할 정보 추가하기 (맞춤형 분할운동 기능)
+router.post(
+    "/division",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    add_division_info
 );
 
 module.exports = router;
