@@ -1129,31 +1129,23 @@ exports.add_division_info = async (req, res) => {
                 user_num: req.user.user_num,
             },
         });
-        // 이미 분할 정보가 있는 경우 (덮어쓰기)
+        // 이미 분할 정보가 있는 경우
         if (division_info) {
-            // 기존 분할 정보에 해당 분할 정보 덮어쓰기
-            const [updateCount] = await Division.update(
-                divisionInfo,
-                {where: {division_num: division_info.division_num}}
-            );
-            if (updateCount > 0) {
-                // 추가 성공 메시지 전송
-                res.status(200).send({message: "Success"});
-            } else {
-                // 추가 실패 메시지 전송
-                res.status(400).send({message: "Update error"});
-            }
-            // 분할 정보가 없는 경우 (새로쓰기)
+            // 기존 분할 정보 삭제
+            await Division.destroy({
+                where: {
+                    user_num: req.user.user_num,
+                }
+            });
+        }
+        // 분할 DB 해당 분할 정보 추가
+        const new_division_info = await Division.create(divisionInfo);
+        if (new_division_info) {
+            // 추가 성공 메시지 전송
+            res.status(200).send({message: "Success"});
         } else {
-            // 분할 DB 해당 분할 정보 추가
-            const new_division_info = await Division.create(divisionInfo);
-            if (new_division_info) {
-                // 추가 성공 메시지 전송
-                res.status(200).send({message: "Success"});
-            } else {
-                // 추가 실패 메시지 전송
-                res.status(400).send({message: "Create error"});
-            }
+            // 추가 실패 메시지 전송
+            res.status(400).send({message: "Create error"});
         }
     } catch (err) {
         res.status(500).send({message: "Server error", error: err.message});
