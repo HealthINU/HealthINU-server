@@ -24,6 +24,7 @@ const { finish_exercise_quest } = require("../controllers/info");
 const { add_body_info } = require("../controllers/info");
 const { get_body_info } = require("../controllers/info");
 const { add_division_info } = require("../controllers/info");
+const { get_division_info } = require("../controllers/info");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -212,6 +213,14 @@ router.post(
     "/division",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     add_division_info
+);
+
+// POST /info/division_exercise
+// 분할운동 정보 가져오기 (맞춤형 분할운동 기능)
+router.post(
+    "/division_exercise",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_division_info
 );
 
 module.exports = router;
