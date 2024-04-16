@@ -100,11 +100,24 @@ exports.get_record = (req, res) => {
             user_num: req.user.user_num,
         },
         attributes: ["record_num", "record_date", "equipment_num", "record_count", "record_weight"],
+        include: [{
+            model: Equipment, // equipment_db와 조인
+            attributes: ["equipment_name", "equipment_category"]
+        }]
     })
         .then((record) => {
+            // 가져온 기록에 marked와 dotColor 속성 추가
+            const updatedRecords = record.map(record => {
+                // 각 기록에 marked, dotColor 추가
+                return {
+                    ...record.get({ plain: true }), // 일반 객체로 변환
+                    marked: true,
+                    dotColor: "red",
+                };
+            });
             //  가져오기 성공 메시지 전송
             if (record.length > 0) {
-                res.status(200).send({data: record, message: "Success"});
+                res.status(200).send({data: updatedRecords, message: "Success"});
             } else {
                 res.status(200).send({data: [], message: "No data found"});
             }
