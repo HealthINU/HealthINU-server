@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const path = require("path");
 
 const passport = require("passport");
 //  ./passport/index.js 가져오기
@@ -40,6 +41,9 @@ sequelize
 //  각종 미들웨어 설정
 app.use(express.json());
 app.use(passport.initialize());
+
+// 정적 파일 제공을 위한 폴더 설정
+app.use('/body_uploads', express.static(path.join(__dirname, 'body_uploads')));
 
 //  라우터 설정
 app.use("/", mainRouter); // 메인화면 라우터

@@ -24,7 +24,6 @@ const { finish_exercise_quest } = require("../controllers/info");
 const { add_body_info } = require("../controllers/info");
 const { get_body_info } = require("../controllers/info");
 const { add_division_info } = require("../controllers/info");
-const path = require("path");
 
 //  GET /info/user
 //  유저 정보 가져오기
@@ -189,9 +188,6 @@ router.get(
     passport.authenticate("jwt", { session: false, failWithError: true }),
     finish_exercise_quest
 );
-
-// 정적 파일 제공을 위한 폴더 설정
-router.use('/body_uploads', express.static(path.join(__dirname, 'body_uploads')));
 
 // POST /info/body
 // 신체 정보 추가하기 (Before/After 기능)
