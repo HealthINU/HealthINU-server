@@ -1095,17 +1095,9 @@ exports.add_body_info = async (req, res) => {
 // 운동 Before/After 신체 정보 가져오기
 exports.get_body_info = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
-        const today = new Date();
-        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
         const before_body_info = await Body.findAll({
             where: {
                 user_num: req.user.user_num,
-                body_date: {
-                    [Op.lt]: currentDateString // 오늘 미만 날짜로 조회
-                },
             },
             order: [
                 ['body_date', 'ASC'] // body_date를 기준으로 오름차순 정렬
