@@ -9,6 +9,8 @@ const {Op} = require("sequelize");
 const moment = require('moment');
 const {Sequelize} = require("sequelize");
 const multer = require("multer");
+const express = require("express");
+const path = require("path");
 
 
 // 운동 정보 가져오기
@@ -1049,6 +1051,7 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({storage: storage}).single("image");
+
 
 // 운동 Before/After 신체 정보 저장하기
 exports.add_body_info = async (req, res) => {
