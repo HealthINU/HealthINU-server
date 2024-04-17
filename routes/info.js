@@ -21,6 +21,7 @@ const { finish_attendance_quest } = require("../controllers/info");
 const { get_exercise_quest } = require("../controllers/info");
 const { accept_exercise_quest } = require("../controllers/info");
 const { finish_exercise_quest } = require("../controllers/info");
+const { get_finished_quest } = require("../controllers/info");
 const { add_body_info } = require("../controllers/info");
 const { get_body_info } = require("../controllers/info");
 const { add_division_info } = require("../controllers/info");
@@ -188,6 +189,14 @@ router.get(
     "/finish_exercise_quest",
     passport.authenticate("jwt", { session: false, failWithError: true }),
     finish_exercise_quest
+);
+
+// GET /info/finished_quest
+// 완료된 퀘스트 정보 가져오기
+router.get(
+    "/finished_quest",
+    passport.authenticate("jwt", { session: false, failWithError: true }),
+    get_finished_quest
 );
 
 // POST /info/body

@@ -19,10 +19,6 @@ class Body extends Sequelize.Model {
                     type: Sequelize.DATEONLY,
                     allowNull: false,
                 },
-                body_height: {
-                    type: Sequelize.FLOAT,
-                    allowNull: true,
-                },
                 body_weight: {
                     type: Sequelize.FLOAT,
                     allowNull: true,

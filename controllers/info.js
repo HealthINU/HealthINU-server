@@ -1039,6 +1039,35 @@ exports.finish_exercise_quest = async (req, res) => {
     }
 }
 
+// 완료한 퀘스트 가져오기
+exports.get_finished_quest = async (req, res) => {
+    try {
+        // 완료된 퀘스트 가져오기
+        const finishedQuests = await Quest_record.findAll({
+            where: {
+                user_num: req.user.user_num,
+                quest_state: '완료',
+            },
+            include: [{
+                model: Quest, // quest_db와 조인
+            }],
+            order: [
+                ['quest_end_date', 'ASC'] // quest_end_date 기준으로 오름차순 정렬
+            ]
+        });
+        // 완료된 퀘스트가 하나라도 있는 경우
+        if (finishedQuests.length > 0) {
+            res.status(200).json({ message: "완료된 퀘스트 가져오기 성공", data: finishedQuests });
+        // 완료된 퀘스트가 하나도 없는 경우
+        } else {
+            res.status(200).json({ message: "완료된 퀘스트가 없습니다.", data: [] });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(400).send('완료된 퀘스트를 가져오는 도중 오류가 발생했습니다.');
+    }
+}
+
 // Multer 설정
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -1071,21 +1100,16 @@ exports.add_body_info = async (req, res) => {
             return res.status(400).json({message: "업로드된 사진이 없습니다."});
         }
 
-        // req.body에서 키와 몸무게 정보 추출
-        const {height, weight} = req.body;
-
         try {
             const imagePath = req.file.path;
 
             const newBodyInfo = await Body.create({
                 user_num: req.user.user_num,
                 body_date: currentDateString,
-                body_height: height,
-                body_weight: weight,
-                body_bmi: weight / ((height / 100) ** 2),
+                body_weight: req.body.weight,
+                body_bmi: req.body.weight / ((req.user.user_height || 100) / 100) ** 2,
                 body_image: imagePath,
             });
-
             return res.json({message: "사진이 성공적으로 업로드되었습니다."});
         } catch (dbError) {
             // 데이터베이스 에러 처리
