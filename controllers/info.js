@@ -1107,7 +1107,6 @@ exports.add_body_info = async (req, res) => {
                 user_num: req.user.user_num,
                 body_date: currentDateString,
                 body_weight: req.body.weight,
-                body_bmi: req.body.weight / ((req.user.user_height || 100) / 100) ** 2,
                 body_image: imagePath,
             });
             return res.json({message: "사진이 성공적으로 업로드되었습니다."});

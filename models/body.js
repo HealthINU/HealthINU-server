@@ -23,10 +23,6 @@ class Body extends Sequelize.Model {
                     type: Sequelize.FLOAT,
                     allowNull: true,
                 },
-                body_bmi: {
-                    type: Sequelize.FLOAT,
-                    allowNull: true,
-                },
                 body_image: {
                     type: Sequelize.STRING(256),
                     allowNull: false,
