@@ -804,7 +804,7 @@ async function createExerciseQuest(req) {
             // 운동 퀘스트 등록하기
             const exercise_quest = await Quest.create({
                 quest_category: 'exercise',
-                quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement} 도전하기`,
+                quest_description: `${selectedEquipment.equipment_name}`,
                 quest_reward: quest_requirement * 10,
                 quest_requirement: quest_requirement,
                 equipment_num: selectedEquipment.equipment_num
@@ -858,7 +858,7 @@ async function createExerciseQuest(req) {
             // 운동 퀘스트 등록하기
             const exercise_quest = await Quest.create({
                 quest_category: 'exercise',
-                quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement} 도전하기`,
+                quest_description: `${selectedEquipment.equipment_name}`,
                 quest_reward: quest_requirement * 10,
                 quest_requirement: quest_requirement,
                 equipment_num: selectedEquipment.equipment_num
@@ -943,7 +943,7 @@ async function createExerciseQuest(req) {
                 // 운동 퀘스트 등록하기
                 const exercise_quest = await Quest.create({
                     quest_category: 'exercise',
-                    quest_description: `${selectedEquipment.equipment_name} 운동 볼륨 ${quest_requirement - maxDailyTotalVolume} 늘리기`,
+                    quest_description: `${selectedEquipment.equipment_name}`,
                     quest_reward: quest_requirement * 10,
                     quest_requirement: quest_requirement,
                     equipment_num: selectedEquipment.equipment_num
