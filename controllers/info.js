@@ -1197,58 +1197,64 @@ exports.get_division_info = async (req, res) => {
                 user_num: req.user.user_num,
             },
         });
-        // 분할운동 시작일부터 오늘이 몇 일 째인지 계산
-        const division_exercise_day = moment(currentDateString).diff(moment(division_info.division_start_date), 'days');
-        const division_count = division_info.division_count;
-        // 오늘이 몇 번째 카테고리인지 계산
-        const today_category_idx = division_exercise_day % division_count;
-        // 카테고리 정보를 배열로 구성
-        const categories = [
-            division_info.first_category,
-            division_info.second_category,
-            division_info.third_category,
-            division_info.fourth_category
-        ].filter(category => category !== null); // null이 아닌 카테고리만 필터링
-        // 오늘의 카테고리
-        const today_category = categories[today_category_idx];
-        // 요청에서 북마크 유무 추출
-        const isMark = req.body.isMark;
-        // 북마크가 설정되어 있다면
-        if (isMark) {
-            // 북마크에서 오늘 해야할 부위의 운동 가져오기
-            const markInfo = await Own.findAll({
-                where: {
-                    user_num: req.user.user_num,
-                },
-                attributes: [],
-                include: [{
-                    model: Equipment, // Equipment_db와 조인
+        // 분할 정보가 없다면
+        if (!division_info) {
+            res.status(200).json({message: "맞춤형 분할 정보가 없습니다.", data: []});
+            // 분할 정보가 있다면
+        } else {
+            // 분할운동 시작일부터 오늘이 몇 일 째인지 계산
+            const division_exercise_day = moment(currentDateString).diff(moment(division_info.division_start_date), 'days');
+            const division_count = division_info.division_count;
+            // 오늘이 몇 번째 카테고리인지 계산
+            const today_category_idx = division_exercise_day % division_count;
+            // 카테고리 정보를 배열로 구성
+            const categories = [
+                division_info.first_category,
+                division_info.second_category,
+                division_info.third_category,
+                division_info.fourth_category
+            ].filter(category => category !== null); // null이 아닌 카테고리만 필터링
+            // 오늘의 카테고리
+            const today_category = categories[today_category_idx];
+            // 요청에서 북마크 유무 추출
+            const isMark = req.body.isMark;
+            // 북마크가 설정되어 있다면
+            if (isMark) {
+                // 북마크에서 오늘 해야할 부위의 운동 가져오기
+                const markInfo = await Own.findAll({
+                    where: {
+                        user_num: req.user.user_num,
+                    },
+                    attributes: [],
+                    include: [{
+                        model: Equipment, // Equipment_db와 조인
+                        where: {
+                            equipment_category: {
+                                [Op.in]: today_category // 오늘의 카테고리
+                            }
+                        }
+                    }]
+                });
+                if (markInfo.length > 0) {
+                    res.status(200).json({message: "(북마크) 맞춤형 분할운동 가져오기 성공", data: markInfo});
+                } else {
+                    res.status(200).json({message: "맞춤형 분할운동에 북마크된 정보가 없습니다.", data: []});
+                }
+                // 북마크가 설정되어 있지 않다면
+            } else {
+                // 전체 운동기구에서 오늘 해야할 부위의 운동 가져오기
+                const exerInfo = await Equipment.findAll({
                     where: {
                         equipment_category: {
                             [Op.in]: today_category // 오늘의 카테고리
                         }
-                    }
-                }]
-            });
-            if (markInfo.length > 0) {
-                res.status(200).json({ message: "(북마크) 맞춤형 분할운동 가져오기 성공", data: markInfo });
-            } else {
-                res.status(200).json({ message: "맞춤형 분할운동에 북마크된 정보가 없습니다.", data: []});
-            }
-        // 북마크가 설정되어 있지 않다면
-        } else {
-            // 전체 운동기구에서 오늘 해야할 부위의 운동 가져오기
-            const exerInfo = await Equipment.findAll({
-                where: {
-                    equipment_category: {
-                        [Op.in]: today_category // 오늘의 카테고리
-                    }
-                },
-            });
-            if (exerInfo.length > 0) {
-                res.status(200).json({ message: "맞춤형 분할운동 가져오기 성공", data: exerInfo });
-            } else {
-                res.status(200).json({ message: "맞춤형 분할운동 정보가 없습니다.", data: []});
+                    },
+                });
+                if (exerInfo.length > 0) {
+                    res.status(200).json({message: "맞춤형 분할운동 가져오기 성공", data: exerInfo});
+                } else {
+                    res.status(200).json({message: "맞춤형 분할운동 정보가 없습니다.", data: []});
+                }
             }
         }
     } catch (err) {
