@@ -68,10 +68,10 @@ exports.get_record = async (req, res) => {
 
         //  가져오기 성공 메시지 전송
         if (updatedRecords.length > 0) {
-            res.status(200).send({data: updatedRecords, message: "Success"});
+            res.status(200).json({data: updatedRecords, message: "Success"});
         } else {
             // 기록 정보가 존재하지 않는 경우
-            res.status(200).send({data: [], message: "No data found"});
+            res.status(200).json({data: [], message: "No data found"});
         }
 
     } catch (err) {
