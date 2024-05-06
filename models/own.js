@@ -15,10 +15,6 @@ class Own extends Sequelize.Model {
           primaryKey: true,
           allowNull: false,
         },
-        own_image: {
-          type: Sequelize.STRING(256),
-          allowNull: true,
-        },
       },
       {
         sequelize,

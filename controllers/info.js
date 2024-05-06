@@ -14,276 +14,147 @@ const path = require("path");
 
 
 // 운동 정보 가져오기
-exports.get_equipment = (req, res) => {
-    Equipment.findAll({})
-        .then((equipment) => {
-            //  가져오기 성공 메시지 전송
-            res.status(200).send({data: equipment, message: "Success"});
-        })
-        .catch((err) => {
-            //  가져오기 실패 메시지 전송
-            res.status(400).send({message: "Server error"});
-        });
+exports.get_equipment = async (req, res) => {
+    try {
+        const equipment = await Equipment.findAll({});
+        // 가져오기 성공 메시지 전송
+        res.status(200).json({data: equipment, message: "Success"});
+    } catch (err) {
+        // 가져오기 실패 메시지 전송
+        res.status(500).json({message: "Server error"});
+    }
 };
 
 // 소유 정보 가져오기
-exports.get_own = (req, res) => {
-    Own.findAll({
-        where: {
-            user_num: req.user.user_num,
-        },
-        attributes: ["own_image"],
-        include: [{
-            model: Equipment, // equipment_db 모델을 조인
-        }]
-    })
-        .then((own) => {
-            //  가져오기 성공 메시지 전송
-            if (own.length > 0) {
-                res.status(200).send({data: own, message: "Success"});
-            } else {
-                res.status(200).send({data: [], message: "No data found"});
-            }
-        })
-        .catch((err) => {
-            //  가져오기 실패 메시지 전송
-            res.status(400).send({message: "Server error"});
+exports.get_own = async (req, res) => {
+    try {
+        const own = await Own.findAll({
+            where: { user_num: req.user.user_num },
+            include: [{ model: Equipment }] // Equipment 모델을 조인
         });
+
+        if (own.length > 0) {
+            res.status(200).json({ data: own, message: "Success" });
+        } else {
+            res.status(200).json({ data: [], message: "No data found" });
+        }
+    } catch (err) {
+        // 가져오기 실패 메시지 전송
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// 기록 정보 가져오기
+exports.get_record = async (req, res) => {
+    try {
+        // 사용자의 기록을 데이터베이스에서 조회
+        const records = await Record.findAll({
+            where: {
+                user_num: req.user.user_num,
+            },
+            attributes: ["record_num", "record_date", "equipment_num", "record_count", "record_weight"],
+            include: [{
+                model: Equipment, // equipment_db와 조인
+                attributes: ["equipment_name", "equipment_category"]
+            }]
+        });
+
+        // 조회된 기록에 marked와 dotColor 속성 추가
+        const updatedRecords = records.map(record => ({
+            ...record.get({ plain: true }), // Sequelize 인스턴스를 일반 객체로 변환
+            marked: true,
+            dotColor: "red",
+        }));
+
+        //  가져오기 성공 메시지 전송
+        if (updatedRecords.length > 0) {
+            res.status(200).send({data: updatedRecords, message: "Success"});
+        } else {
+            // 기록 정보가 존재하지 않는 경우
+            res.status(200).send({data: [], message: "No data found"});
+        }
+
+    } catch (err) {
+        // 에러 발생 시 서버 에러 메시지 전송
+        res.status(500).json({message: "Server error"});
+    }
 };
 
 // 소유 정보 추가하기
 exports.add_own = async (req, res) => {
-    // 요청에서 정보 추출
-    const ownInfo = req.body;
-    // 유저 정보는 토큰에서 추출
-    ownInfo.user_num = req.user.user_num;
-    console.log(ownInfo);
-    // 소유 DB에 저장하기
-    const new_own = await Own.create(ownInfo);
-    if (new_own) {
+    try {
+        // 요청에서 정보 추출 및 유저 정보 설정
+        const ownInfo = {
+            ...req.body,
+            user_num: req.user.user_num
+        };
+        // 소유 DB에 저장하기
+        const new_own = await Own.create(ownInfo);
         // 추가 성공 메시지 전송
-        res.status(200).send({message: "Success"});
-    } else {
+        res.status(200).json({message: "Success"});
+
+    } catch (err) {
         // 추가 실패 메시지 전송
-        res.status(400).send({message: "Server error"});
+        res.status(500).json({message: "Server error"});
     }
 };
 
 // 소유 정보 삭제하기
-exports.delete_own = (req, res) => {
-    // 요청에서 삭제할 운동기구 번호(equipment_num) 추출
-    const equipment_num = req.params.equipment_num;
+exports.delete_own = async (req, res) => {
+    try {
+        // 요청에서 삭제할 운동기구 번호(equipment_num) 추출
+        const equipment_num = req.params.equipment_num;
 
-    Own.destroy({
-        where: {
-            user_num: req.user.user_num,
-            equipment_num: equipment_num
-        },
-    })
-        .then((deleteCount) => {
-            // 삭제 성공 메시지 전송
-            if (deleteCount > 0) {
-                res.status(200).send({message: "Success"});
-            } else {
-                res.status(404).send({message: "Not found"});
-            }
-        })
-        .catch((err) => {
-            // 삭제 실패 메시지 전송
-            console.log(err);
-            res.status(400).send({message: "Server error"});
+        // 지정된 조건에 맞는 소유 정보를 삭제하고 삭제된 행의 수를 반환받음
+        const deleteCount = await Own.destroy({
+            where: {
+                user_num: req.user.user_num,
+                equipment_num: equipment_num
+            },
         });
+
+        // 삭제된 행이 있다면 성공 메시지 전송, 없다면 404 오류 전송
+        if (deleteCount > 0) {
+            res.status(200).json({message: "Success"});
+        } else {
+            res.status(404).json({message: "Not found"});
+        }
+    } catch (err) {
+        // 오류 발생 시 서버 오류 메시지 전송
+        res.status(500).json({message: "Server error"});
+    }
 };
 
-// 기록 정보 가져오기
-exports.get_record = (req, res) => {
-    Record.findAll({
-        where: {
-            user_num: req.user.user_num,
-        },
-        attributes: ["record_num", "record_date", "equipment_num", "record_count", "record_weight"],
-        include: [{
-            model: Equipment, // equipment_db와 조인
-            attributes: ["equipment_name", "equipment_category"]
-        }]
-    })
-        .then((record) => {
-            // 가져온 기록에 marked와 dotColor 속성 추가
-            const updatedRecords = record.map(record => {
-                // 각 기록에 marked, dotColor 추가
-                return {
-                    ...record.get({ plain: true }), // 일반 객체로 변환
-                    marked: true,
-                    dotColor: "red",
-                };
-            });
-            //  가져오기 성공 메시지 전송
-            if (record.length > 0) {
-                res.status(200).send({data: updatedRecords, message: "Success"});
-            } else {
-                res.status(200).send({data: [], message: "No data found"});
-            }
-        })
-        .catch((err) => {
-            //  가져오기 실패 메시지 전송
-            //console.log(err);
-            res.status(400).send({message: "Server error"});
-        });
-};
+
 
 // 기록 정보 추가하기
 exports.add_record = async (req, res) => {
-    // 요청에서 정보 추출
-    const recordInfo = req.body;
-    // 운동기록에 따른 경험치
+    const { body: recordInfo } = req;
+
+    // 운동기록에 따른 경험치 계산
     const exp = recordInfo.record_weight * recordInfo.record_count;
-    // record_db에 기록 추가
+
     try {
+        // 요청한 사용자 번호를 기록 정보에 추가
         recordInfo.user_num = req.user.user_num;
+
+        // record_db에 기록 추가
         await Record.create(recordInfo);
-        // 경험치 반영
-        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
-        // 경험치에 따른 레벨 시스템
-        await req.user.update({user_level: 1 + ~~(req.user.user_exp / 100000)});
+
+        // 사용자 경험치 업데이트
+        const updatedUserExp = req.user.user_exp + exp;
+        await req.user.update({ user_exp: updatedUserExp });
+
+        // 경험치에 따른 레벨 시스템 업데이트
+        const newLevel = 1 + Math.floor(updatedUserExp / 100000);
+        await req.user.update({ user_level: newLevel });
+
         // 성공 메시지 전송
-        res.status(200).send({message: "Success"});
+        res.status(200).json({ message: "Success" });
     } catch (err) {
+        console.error(err);  // 서버 측 에러 로깅
         // 실패 메시지 전송
-        res.status(400).send({message: "Server error"});
-    }
-};
-
-// 기록 정보 수정하기
-exports.patch_record = async (req, res) => {
-    //  body에서 key만 리스트로 추출
-    const updates = Object.keys(req.body);
-    // 기본키인 record_num 추출 (수정기준)
-    const record_num = req.body.record_num;
-    // 기본키인 record_num을 이용해서 해당 record가 있는지 확인하고 user_num을 추출
-    const record = await Record.findOne({
-        where: {
-            record_num: record_num,
-        },
-        attributes: ["user_num"],
-    })
-    if (record) {
-        // record.user_num과 req.user.user_num이 일치하는지 확인(검증)
-        if (record.user_num !== req.user.user_num) {
-            // 만약 토큰정보와 추가할 유저 정보가 일치하지 않으면 에러 메시지 전송(부적절한 접근)
-            res.status(400).send({message: "Invalid access"})
-        } else {
-            //  날짜, 횟수, 무게만 수정 가능
-            const allowedUpdates = [
-                "record_date",
-                "record_count",
-                "record_weight",
-            ];
-
-            //  updates 중 allowedUpdates에 포함된 것만 to_updates에 저장
-            const to_updates = updates.filter((update) =>
-                allowedUpdates.includes(update)
-            );
-
-            //  to_updates가 비어있으면 에러 메시지 전송
-            // if (to_updates.length === 0) {
-            //   return res.status(400).send({ error: "Invalid updates!" });
-            // }
-
-            //  수정할 정보를 담을 객체
-            let to_update_info = {};
-
-            //  to_updates에 있는 키로 req.body에서 값을 가져와 to_update_info에 저장
-            to_updates.forEach((update) => (to_update_info[update] = req.body[update]));
-
-            try {
-                // 이전 기록 조회
-                const originalRecord = await Record.findOne({
-                    where: {
-                        record_num: record_num,
-                    },
-                });
-
-                // 기록 정보 수정
-                await Record.update(to_update_info, {
-                    where: {
-                        record_num: record_num,
-                    },
-                });
-
-                // 수정된 기록 조회
-                const updatedRecord = await Record.findOne({
-                    where: {
-                        record_num: record_num,
-                    },
-                });
-
-                // 경험치 계산
-                const originalExp = originalRecord.record_weight * originalRecord.record_count;
-                const updatedExp = updatedRecord.record_weight * updatedRecord.record_count;
-                const expDifference = updatedExp - originalExp;
-
-                // 경험치 반영
-                req.user = await req.user.update({user_exp: req.user.user_exp + expDifference});
-
-                // 경험치에 따른 레벨 시스템
-                await req.user.update({user_level: 1 + ~~(req.user.user_exp / 100000)});
-
-                // 성공 메시지 전송
-                res.status(200).send({message: "Success"});
-            } catch (err) {
-                // 실패 메시지 전송
-                res.status(400).send({message: "Server error"});
-            }
-        }
-    } else {
-        res.status(400).send({message: "No data found"});
-    }
-};
-
-// 기록 정보 삭제하기
-exports.delete_record = async (req, res) => {
-    // 요청에서 기록 번호(record_num) 추출
-    const record_num = req.params.record_num;
-
-    // 기록 조회
-    const record = await Record.findOne({
-        where: {
-            record_num: record_num,
-            user_num: req.user.user_num,
-        },
-    });
-
-    if (record) {
-        try {
-            // 경험치 계산
-            const exp = record.record_weight * record.record_count;
-
-            // 기록 삭제
-            const deleteCount = await Record.destroy({
-                where: {
-                    record_num: record_num,
-                },
-            })
-
-            // 경험치 반영
-            req.user = await req.user.update({user_exp: req.user.user_exp - exp});
-
-            // 경험치에 따른 레벨 시스템
-            await req.user.update({user_level: 1 + ~~(req.user.user_exp / 100000)});
-
-            // 삭제 성공 메시지 전송
-            if (deleteCount > 0) {
-                res.status(200).send({message: "Success"});
-            } else {
-                res.status(200).send({message: "Not found"});
-            }
-
-        } catch (err) {
-            // 삭제 실패 메시지 전송
-            res.status(400).send({message: "Server error"});
-        }
-    } else {
-        res.status(200).send({message: "No data found"});
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -302,7 +173,6 @@ exports.get_attendance_quest = async (req, res) => {
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
         const currentDateString = getDateStringInKST(currentDate);
-        console.log(currentDateString);
 
         // 출석 퀘스트 수행여부 (1)
         const process_quest = await Quest_record.findOne({
@@ -320,7 +190,6 @@ exports.get_attendance_quest = async (req, res) => {
             previousDate.setDate(currentDate.getDate() - 1);
             // 이전 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
             const previousDateString = getDateStringInKST(previousDate);
-            console.log(currentDateString - previousDateString);
             // 출석 퀘스트 종료일이 지나지 않았다면
             if (currentDateString <= process_quest.quest_end_date) {
                 // 이전 날의 운동기록이 있는지 확인
@@ -330,13 +199,9 @@ exports.get_attendance_quest = async (req, res) => {
                         record_date: previousDateString,
                     },
                 });
-                console.log(2);
-                console.log(record);
                 if (record) {
-                    console.log(3);
                     // 오늘이 출석 퀘스트 종료일이라면
                     if (currentDateString === process_quest.quest_end_date) {
-                        console.log(4);
                         const today_record = await Record.findOne({
                             where: {
                                 record_date: currentDateString,
@@ -344,9 +209,7 @@ exports.get_attendance_quest = async (req, res) => {
                             },
                         });
                         // 오늘 운동기록이 있다면
-                        console.log(5);
                         if (today_record) {
-                            console.log(6);
                             // process_quest의 상태를 달성상태로 변경
                             await Quest_record.update(
                                 {quest_state: '달성', state_update_date: currentDateString},
@@ -362,7 +225,6 @@ exports.get_attendance_quest = async (req, res) => {
                     }
                     // 이전 날의 운동기록이 없다면
                 } else {
-                    console.log(10);
                     // process_quest의 상태를 실패상태로 변경
                     await Quest_record.update({quest_state: '실패', state_update_date: currentDateString},
                         {
@@ -371,7 +233,6 @@ exports.get_attendance_quest = async (req, res) => {
                 }
                 // 출석 퀘스트 종료일이 지났다면
             } else {
-                console.log(7);
                 const past_record = await Record.findOne({
                     where: {
                         record_date: process_quest.quest_end_date,
@@ -380,7 +241,6 @@ exports.get_attendance_quest = async (req, res) => {
                 });
                 // 출석 종료일 날 과거 운동기록이 있다면
                 if (past_record) {
-                    console.log(8);
                     // process_quest의 상태를 달성상태로 변경
                     await Quest_record.update({quest_state: '달성', state_update_date: process_quest.quest_end_date},
                         {
@@ -390,7 +250,6 @@ exports.get_attendance_quest = async (req, res) => {
                 }
                 // 출석 종료일 날 과거 운동기록이 없다면
                 else {
-                    console.log(9);
                     // process_quest의 상태를 실패상태로 변경
                     await Quest_record.update({quest_state: '실패', state_update_date: process_quest.quest_end_date},
                         {
@@ -491,77 +350,77 @@ exports.get_attendance_quest = async (req, res) => {
 
 // 출석일 가져오기
 exports.get_attendance_day = async (req, res) => {
-    let attendance_day = 0; // 출석일 0으로 초기화
-    let attendance_rate = 0; // 출석률 0으로 초기화
-    // 현재 날짜 생성 (연-월-일만 고려)
-    const today = new Date();
-    const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-    const currentDateString = getDateStringInKST(currentDate);
-    // 진행중인 퀘스트 가져오기
-    const process_quest = await Quest_record.findOne({
-        where: {
-            user_num: req.user.user_num,
-            quest_num: {
-                [Op.lte]: 5 // quest_num이 5 이하인 조건
+    try {
+        const today = new Date();
+        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const currentDateString = getDateStringInKST(currentDate)
+        // 진행중인 퀘스트 가져오기
+        const process_quest = await Quest_record.findOne({
+            where: {
+                user_num: req.user.user_num,
+                quest_num: { [Op.lte]: 5 },
+                quest_state: '진행',
             },
-            quest_state: '진행',
-        },
-    });
-    // 진행중인 출석 퀘스트가 있다면
-    if (process_quest) {
-        attendance_day = moment(currentDateString).diff(moment(process_quest.quest_start_date), 'days');
-        console.log(attendance_day);
+        });
+
+        // 진행중인 출석 퀘스트가 없다면
+        if (!process_quest) {
+            console.log('진행중인 출석 퀘스트가 없습니다.');
+            return res.status(200).json({data: {attendance_day: 0, attendance_rate: 0}, message: "진행중인 출석 퀘스트가 없습니다."});
+        }
+
+        // 진행중인 출석 퀘스트가 있다면
+        let attendance_day = moment(currentDateString).diff(moment(process_quest.quest_start_date), 'days');
         const today_record = await Record.findOne({
             where: {
                 record_date: currentDateString,
                 user_num: req.user.user_num,
             },
         });
+
         // 오늘 운동기록이 있다면
         if (today_record) {
             attendance_day += 1;
         }
-        attendance_rate = Math.round(attendance_day / moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days') * 100);
-        res.status(200).send({
+
+        const total_days = moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days') + 1;
+        console.log(total_days);
+        const attendance_rate = Math.round((attendance_day / total_days) * 100);
+
+        res.status(200).json({
             data: {attendance_day: attendance_day, attendance_rate: attendance_rate},
             message: "출석일 가져오기 성공"
         });
-    }
-    // 진행중인 출석 퀘스트가 없다면
-    else {
-        console.log('진행중인 출석 퀘스트가 없습니다.');
-        res.status(200).send({data: {attendance_day: 0, attendance_rate: 0}, message: "진행중인 출석 퀘스트가 없습니다."});
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({message: "서버 오류로 출석일 정보를 가져오는데 실패했습니다."});
     }
 }
 
 // 출석 퀘스트 수락하기 (미진행 -> 진행)
 exports.accept_attendance_quest = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
         const today = new Date();
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        // 현재 미진행 퀘스트 가져오기
+        const currentDateString = getDateStringInKST(currentDate); // 'YYYY-MM-DD' 형식으로 변환
+
         const not_process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: {
-                    [Op.lte]: 5 // quest_num이 5 이하인 조건
-                },
+                quest_num: { [Op.lte]: 5 }, // quest_num이 5 이하
                 quest_state: '미진행',
             },
-            include: [{
-                model: Quest, // quest_db와 조인
-            }]
+            include: [{ model: Quest }] // quest_db와 조인
         });
-        // quest_end_date 설정 (currentDate에서 requirement 추가)
+
+        if (!not_process_quest) {
+            return res.status(404).json({ message: '진행 가능한 미진행 퀘스트가 없습니다.' });
+        }
+
         const endDate = new Date(currentDate);
         endDate.setDate(currentDate.getDate() + not_process_quest.Quest.quest_requirement - 1);
-        // 이전 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const endDateString = getDateStringInKST(endDate);
-        // 미진행 퀘스트의 상태를 진행상태로 변경
+        const endDateString = getDateStringInKST(endDate); // 'YYYY-MM-DD' 형식으로 변환
+
         await Quest_record.update(
             {
                 quest_state: '진행',
@@ -569,51 +428,52 @@ exports.accept_attendance_quest = async (req, res) => {
                 quest_end_date: endDateString,
                 state_update_date: currentDateString,
             },
-            {where: {quest_record_num: not_process_quest.quest_record_num}}
+            { where: { quest_record_num: not_process_quest.quest_record_num } }
         );
-        res.status(200).send('퀘스트 수락하기가 처리되었습니다.');
+
+        res.status(200).json({ message: '퀘스트가 성공적으로 수락되었습니다.' });
     } catch (error) {
         console.error(error);
-        res.status(400).send('퀘스트 수락하기 도중 오류가 발생했습니다.')
+        res.status(500).json({ message: '퀘스트 수락 중 서버 오류가 발생했습니다.' });
     }
 }
 
 // 출석 퀘스트 완료하기 (달성 -> 완료)
 exports.finish_attendance_quest = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
+        // 현재 날짜 (연-월-일) 생성
         const today = new Date();
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        // 현재 달성 퀘스트 가져오기
-        const achieve_quest = await Quest_record.findOne({
+        const currentDateString = getDateStringInKST(currentDate); // 'YYYY-MM-DD' 형식으로 변환
+
+        // 달성한 퀘스트 정보 조회
+        const achievedQuest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: {
-                    [Op.lte]: 5 // quest_num이 5 이하인 조건
-                },
+                quest_num: { [Op.lte]: 5 }, // quest_num이 5 이하
                 quest_state: '달성',
             },
-            include: [{
-                model: Quest, // quest_db와 조인
-            }]
+            include: [{ model: Quest }] // Quest 모델과 조인
         });
-        // 미진행 퀘스트의 상태를 진행상태로 변경
+
+        if (!achievedQuest) {
+            return res.status(404).json({ message: '완료할 수 있는 달성된 퀘스트가 없습니다.' });
+        }
+
+        // 퀘스트 상태를 완료로 업데이트
         await Quest_record.update(
-            {
-                quest_state: '완료',
-                state_update_date: currentDateString,
-            },
-            {where: {quest_record_num: achieve_quest.quest_record_num}}
+            { quest_state: '완료', state_update_date: currentDateString },
+            { where: { quest_record_num: achievedQuest.quest_record_num } }
         );
-        // 퀘스트 완료에 따른 보상 경험치 반영
-        const exp = achieve_quest.Quest.quest_reward;
-        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
-        res.status(200).send('퀘스트 완료하기가 처리되었습니다.');
+
+        // 경험치 반영
+        const exp = achievedQuest.Quest.quest_reward;
+        await req.user.update({ user_exp: req.user.user_exp + exp });
+
+        res.json({ message: '퀘스트가 성공적으로 완료되었습니다.' });
     } catch (error) {
         console.error(error);
-        res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.');
+        res.status(500).json({ message: '퀘스트 완료 처리 중 오류가 발생했습니다.' });
     }
 }
 
@@ -964,107 +824,101 @@ async function createExerciseQuest(req) {
 // 운동 퀘스트 수락하기 (미진행 -> 진행)
 exports.accept_exercise_quest = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
         const today = new Date();
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        // 현재 미진행 퀘스트 가져오기
+        const currentDateString = getDateStringInKST(currentDate); // 현재 날짜를 'YYYY-MM-DD' 형식으로 변환
+
         const not_process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: {
-                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
-                },
+                quest_num: { [Op.gt]: 5 }, // quest_num이 5보다 큰 조건
                 quest_state: '미진행',
             },
-            include: [{
-                model: Quest, // quest_db와 조인
-            }]
+            include: [{ model: Quest }]
         });
-        // 미진행 퀘스트의 상태를 진행상태로 변경
-        await Quest_record.update(
-            {
-                quest_state: '진행',
-                quest_start_date: currentDateString,
-                state_update_date: currentDateString,
-            },
-            {where: {quest_record_num: not_process_quest.quest_record_num}}
-        );
-        res.status(200).send('퀘스트 수락하기가 처리되었습니다.');
+
+        if (!not_process_quest) {
+            return res.status(404).json({ message: '미진행 상태의 운동 퀘스트를 찾을 수 없습니다.' });
+        }
+
+        await Quest_record.update({
+            quest_state: '진행',
+            quest_start_date: currentDateString,
+            state_update_date: currentDateString,
+        }, {
+            where: { quest_record_num: not_process_quest.quest_record_num }
+        });
+
+        res.status(200).json({ message: '퀘스트 수락 처리가 완료되었습니다.' });
     } catch (error) {
-        console.error(error);
-        res.status(400).send('퀘스트 수락하기 도중 오류가 발생했습니다.')
+        console.error('퀘스트 수락 처리 중 오류:', error);
+        res.status(500).json({ message: '퀘스트 수락 도중 서버 오류가 발생했습니다.' });
     }
 }
 
 // 운동 퀘스트 완료하기 (달성 -> 완료)
 exports.finish_exercise_quest = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
         const today = new Date();
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        // 현재 달성 퀘스트 가져오기
+        const currentDateString = getDateStringInKST(currentDate); // 'YYYY-MM-DD' 형식으로 변환
+
         const achieve_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: {
-                    [Op.gt]: 5 // quest_num이 5보다 큰 조건
-                },
+                quest_num: { [Op.gt]: 5 }, // quest_num이 5보다 큰 조건
                 quest_state: '달성',
             },
-            include: [{
-                model: Quest, // quest_db와 조인
-            }]
+            include: [{ model: Quest }]
         });
-        // 미진행 퀘스트의 상태를 진행상태로 변경
-        await Quest_record.update(
-            {
-                quest_state: '완료',
-                quest_end_date: currentDateString,
-                state_update_date: currentDateString,
-            },
-            {where: {quest_record_num: achieve_quest.quest_record_num}}
-        );
+
+        if (!achieve_quest) {
+            return res.status(404).json({ message: '달성 상태의 운동 퀘스트를 찾을 수 없습니다.' });
+        }
+
+        await Quest_record.update({
+            quest_state: '완료',
+            quest_end_date: currentDateString,
+            state_update_date: currentDateString,
+        }, {
+            where: { quest_record_num: achieve_quest.quest_record_num }
+        });
+
         // 퀘스트 완료에 따른 보상 경험치 반영
         const exp = achieve_quest.Quest.quest_reward;
-        console.log(exp);
-        req.user = await req.user.update({user_exp: req.user.user_exp + exp});
-        res.status(200).send('퀘스트 완료하기가 처리되었습니다.');
+        await req.user.update({ user_exp: req.user.user_exp + exp });
+
+        res.status(200).json({ message: '퀘스트 완료 처리가 완료되었습니다.' });
     } catch (error) {
-        console.error(error);
-        res.status(400).send('퀘스트 완료하기 도중 오류가 발생했습니다.');
+        console.error('퀘스트 완료 처리 중 오류:', error);
+        res.status(500).json({ message: '퀘스트 완료 도중 서버 오류가 발생했습니다.' });
     }
 }
 
 // 완료한 퀘스트 가져오기
 exports.get_finished_quest = async (req, res) => {
     try {
-        // 완료된 퀘스트 가져오기
         const finishedQuests = await Quest_record.findAll({
             where: {
                 user_num: req.user.user_num,
                 quest_state: '완료',
             },
             include: [{
-                model: Quest, // quest_db와 조인
+                model: Quest,
             }],
             order: [
-                ['quest_end_date', 'ASC'] // quest_end_date 기준으로 오름차순 정렬
+                ['quest_end_date', 'ASC']
             ]
         });
-        // 완료된 퀘스트가 하나라도 있는 경우
+
         if (finishedQuests.length > 0) {
             res.status(200).json({ message: "완료된 퀘스트 가져오기 성공", data: finishedQuests });
-        // 완료된 퀘스트가 하나도 없는 경우
         } else {
             res.status(200).json({ message: "완료된 퀘스트가 없습니다.", data: [] });
         }
     } catch (error) {
-        console.error(error);
-        res.status(400).send('완료된 퀘스트를 가져오는 도중 오류가 발생했습니다.');
+        console.error('완료된 퀘스트 가져오기 중 오류:', error);
+        res.status(500).json({ message: '완료된 퀘스트를 가져오는 도중 서버 오류가 발생했습니다.' });
     }
 }
 
@@ -1144,42 +998,33 @@ exports.get_body_info = async (req, res) => {
 // 맞춤형 분할운동 분할 정보 저장하기
 exports.add_division_info = async (req, res) => {
     try {
-        // 현재 날짜 생성 (연-월-일만 고려)
-        const today = new Date();
-        const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-        // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
-        const currentDateString = getDateStringInKST(currentDate);
-        // 요청에서 정보 추출
-        const divisionInfo = req.body;
-        // 분할 정보에 user_num 추가
-        divisionInfo.user_num = req.user.user_num;
-        // 분할 정보에 분할 시작일 추가
-        divisionInfo.division_start_date = currentDateString;
-        const division_info = await Division.findOne({
+        const currentDate = new Date();
+        const currentDateString = getDateStringInKST(new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate())); // 'YYYY-MM-DD' 형식으로 변환
+
+        const divisionInfo = {
+            ...req.body,
+            user_num: req.user.user_num,
+            division_start_date: currentDateString
+        };
+
+        // 기존 분할 정보가 있으면 삭제
+        await Division.destroy({
             where: {
                 user_num: req.user.user_num,
-            },
+            }
         });
-        // 이미 분할 정보가 있는 경우
-        if (division_info) {
-            // 기존 분할 정보 삭제
-            await Division.destroy({
-                where: {
-                    user_num: req.user.user_num,
-                }
-            });
-        }
-        // 분할 DB 해당 분할 정보 추가
+
+        // 새로운 분할 정보 추가
         const new_division_info = await Division.create(divisionInfo);
+
         if (new_division_info) {
-            // 추가 성공 메시지 전송
-            res.status(200).send({message: "Success"});
+            res.status(200).json({ message: "분할 정보 저장에 성공했습니다." });
         } else {
-            // 추가 실패 메시지 전송
-            res.status(400).send({message: "Create error"});
+            res.status(400).json({ message: "분할 정보 저장에 실패했습니다." });
         }
     } catch (err) {
-        res.status(500).send({message: "Server error", error: err.message});
+        console.error('분할 정보 저장 중 서버 오류:', err.message);
+        res.status(500).json({ message: "서버 오류로 분할 정보 저장에 실패했습니다.", error: err.message });
     }
 };
 
@@ -1258,6 +1103,7 @@ exports.get_division_info = async (req, res) => {
             }
         }
     } catch (err) {
-        res.status(500).send({message: "Server error", error: err.message});
+        console.error('맞춤형 분할운동 가져오기 중 오류:', err.message);
+        res.status(500).json({ message: "서버 오류로 맞춤형 분할운동 정보를 가져오는데 실패했습니다.", error: err.message });
     }
 };

@@ -5,13 +5,13 @@ const passport = require("passport");
 //  유저 정보 수정하는 함수 가져오기
 const { patch_user } = require("../controllers/user");
 const { delete_user } = require("../controllers/user");
-const { patch_record } = require("../controllers/info");
+// const { patch_record } = require("../controllers/info");
 const { get_equipment } = require("../controllers/info");
 const { get_own } = require("../controllers/info");
 const { get_record } = require("../controllers/info");
 const { add_record } = require("../controllers/info");
 const { add_own } = require("../controllers/info");
-const { delete_record } = require("../controllers/info");
+// const { delete_record } = require("../controllers/info");
 const { delete_own } = require("../controllers/info");
 const { get_rank } = require("../controllers/user");
 const { get_attendance_quest } = require("../controllers/info");
@@ -113,19 +113,19 @@ router.post(
 //  PATCH /info/record
 //  기록 정보 수정하기
 //  날짜, 횟수, 무게만 수정 가능
-router.patch(
-    "/record",
-    passport.authenticate("jwt", { session: false, failWithError: true }),
-    patch_record
-);
+// router.patch(
+//     "/record",
+//     passport.authenticate("jwt", { session: false, failWithError: true }),
+//     patch_record
+// );
 
 //  DELETE /info/record
 //  기록 정보 삭제하기
-router.delete(
-    "/record/:record_num",
-    passport.authenticate("jwt", { session: false, failWithError: true }),
-    delete_record
-);
+// router.delete(
+//     "/record/:record_num",
+//     passport.authenticate("jwt", { session: false, failWithError: true }),
+//     delete_record
+// );
 
 // GET /info/rank
 // 랭킹 정보 가져오기
