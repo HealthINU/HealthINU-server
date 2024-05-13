@@ -29,18 +29,18 @@ exports.get_equipment = async (req, res) => {
 exports.get_own = async (req, res) => {
     try {
         const own = await Own.findAll({
-            where: { user_num: req.user.user_num },
-            include: [{ model: Equipment }] // Equipment 모델을 조인
+            where: {user_num: req.user.user_num},
+            include: [{model: Equipment}] // Equipment 모델을 조인
         });
 
         if (own.length > 0) {
-            res.status(200).json({ data: own, message: "Success" });
+            res.status(200).json({data: own, message: "Success"});
         } else {
-            res.status(200).json({ data: [], message: "No data found" });
+            res.status(200).json({data: [], message: "No data found"});
         }
     } catch (err) {
         // 가져오기 실패 메시지 전송
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({message: "Server error"});
     }
 };
 
@@ -61,7 +61,7 @@ exports.get_record = async (req, res) => {
 
         // 조회된 기록에 marked와 dotColor 속성 추가
         const updatedRecords = records.map(record => ({
-            ...record.get({ plain: true }), // Sequelize 인스턴스를 일반 객체로 변환
+            ...record.get({plain: true}), // Sequelize 인스턴스를 일반 객체로 변환
             marked: true,
             dotColor: "red",
         }));
@@ -126,10 +126,9 @@ exports.delete_own = async (req, res) => {
 };
 
 
-
 // 기록 정보 추가하기
 exports.add_record = async (req, res) => {
-    const { body: recordInfo } = req;
+    const {body: recordInfo} = req;
 
     // 운동기록에 따른 경험치 계산
     const exp = recordInfo.record_weight * recordInfo.record_count;
@@ -143,18 +142,18 @@ exports.add_record = async (req, res) => {
 
         // 사용자 경험치 업데이트
         const updatedUserExp = req.user.user_exp + exp;
-        await req.user.update({ user_exp: updatedUserExp });
+        await req.user.update({user_exp: updatedUserExp});
 
         // 경험치에 따른 레벨 시스템 업데이트
         const newLevel = 1 + Math.floor(updatedUserExp / 100000);
-        await req.user.update({ user_level: newLevel });
+        await req.user.update({user_level: newLevel});
 
         // 성공 메시지 전송
-        res.status(200).json({ message: "Success" });
+        res.status(200).json({message: "Success"});
     } catch (err) {
         console.error(err);  // 서버 측 에러 로깅
         // 실패 메시지 전송
-        res.status(500).json({ message: "Server error" });
+        res.status(500).json({message: "Server error"});
     }
 };
 
@@ -294,7 +293,6 @@ exports.get_attendance_quest = async (req, res) => {
                         const nextQuest = await Quest.findOne({
                             where: {quest_num: recent_quest.quest_num + 1}
                         });
-                        console.log(nextQuest);
                         if (nextQuest && nextQuest.quest_num <= 5) {
                             await Quest_record.create({
                                 quest_num: nextQuest.quest_num,
@@ -358,14 +356,13 @@ exports.get_attendance_day = async (req, res) => {
         const process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: { [Op.lte]: 5 },
+                quest_num: {[Op.lte]: 5},
                 quest_state: '진행',
             },
         });
 
         // 진행중인 출석 퀘스트가 없다면
         if (!process_quest) {
-            console.log('진행중인 출석 퀘스트가 없습니다.');
             return res.status(200).json({data: {attendance_day: 0, attendance_rate: 0}, message: "진행중인 출석 퀘스트가 없습니다."});
         }
 
@@ -384,7 +381,6 @@ exports.get_attendance_day = async (req, res) => {
         }
 
         const total_days = moment(process_quest.quest_end_date).diff(moment(process_quest.quest_start_date), 'days') + 1;
-        console.log(total_days);
         const attendance_rate = Math.round((attendance_day / total_days) * 100);
 
         res.status(200).json({
@@ -407,14 +403,14 @@ exports.accept_attendance_quest = async (req, res) => {
         const not_process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: { [Op.lte]: 5 }, // quest_num이 5 이하
+                quest_num: {[Op.lte]: 5}, // quest_num이 5 이하
                 quest_state: '미진행',
             },
-            include: [{ model: Quest }] // quest_db와 조인
+            include: [{model: Quest}] // quest_db와 조인
         });
 
         if (!not_process_quest) {
-            return res.status(404).json({ message: '진행 가능한 미진행 퀘스트가 없습니다.' });
+            return res.status(404).json({message: '진행 가능한 미진행 퀘스트가 없습니다.'});
         }
 
         const endDate = new Date(currentDate);
@@ -428,13 +424,13 @@ exports.accept_attendance_quest = async (req, res) => {
                 quest_end_date: endDateString,
                 state_update_date: currentDateString,
             },
-            { where: { quest_record_num: not_process_quest.quest_record_num } }
+            {where: {quest_record_num: not_process_quest.quest_record_num}}
         );
 
-        res.status(200).json({ message: '퀘스트가 성공적으로 수락되었습니다.' });
+        res.status(200).json({message: '퀘스트가 성공적으로 수락되었습니다.'});
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: '퀘스트 수락 중 서버 오류가 발생했습니다.' });
+        res.status(500).json({message: '퀘스트 수락 중 서버 오류가 발생했습니다.'});
     }
 }
 
@@ -450,30 +446,30 @@ exports.finish_attendance_quest = async (req, res) => {
         const achievedQuest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: { [Op.lte]: 5 }, // quest_num이 5 이하
+                quest_num: {[Op.lte]: 5}, // quest_num이 5 이하
                 quest_state: '달성',
             },
-            include: [{ model: Quest }] // Quest 모델과 조인
+            include: [{model: Quest}] // Quest 모델과 조인
         });
 
         if (!achievedQuest) {
-            return res.status(404).json({ message: '완료할 수 있는 달성된 퀘스트가 없습니다.' });
+            return res.status(404).json({message: '완료할 수 있는 달성된 퀘스트가 없습니다.'});
         }
 
         // 퀘스트 상태를 완료로 업데이트
         await Quest_record.update(
-            { quest_state: '완료', state_update_date: currentDateString },
-            { where: { quest_record_num: achievedQuest.quest_record_num } }
+            {quest_state: '완료', state_update_date: currentDateString},
+            {where: {quest_record_num: achievedQuest.quest_record_num}}
         );
 
         // 경험치 반영
         const exp = achievedQuest.Quest.quest_reward;
-        await req.user.update({ user_exp: req.user.user_exp + exp });
+        await req.user.update({user_exp: req.user.user_exp + exp});
 
-        res.json({ message: '퀘스트가 성공적으로 완료되었습니다.' });
+        res.json({message: '퀘스트가 성공적으로 완료되었습니다.'});
     } catch (error) {
         console.error(error);
-        res.status(500).json({ message: '퀘스트 완료 처리 중 오류가 발생했습니다.' });
+        res.status(500).json({message: '퀘스트 완료 처리 중 오류가 발생했습니다.'});
     }
 }
 
@@ -485,7 +481,6 @@ exports.get_exercise_quest = async (req, res) => {
         const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
         // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
         const currentDateString = getDateStringInKST(currentDate);
-        console.log(currentDateString);
 
         // 운동 퀘스트 수행여부 (1)
         const process_quest = await Quest_record.findOne({
@@ -528,11 +523,11 @@ exports.get_exercise_quest = async (req, res) => {
             }
             // 운동 퀘스트 필요조건을 못 넘었다면
             else {
-                console.log('아무것도 안함');
+                console.log('아무것도 안함1');
             }
             // 진행중인 퀘스트가 없다면
         } else {
-            console.log('아무것도 안함');
+            console.log('아무것도 안함2');
         }
 
         // 퀘스트 상태에 따라 퀘스트 생성 (2)
@@ -598,7 +593,8 @@ async function createExerciseQuest(req) {
     const currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     // 현재 날짜를 'YYYY-MM-DD' 형식의 문자열로 변환
     const currentDateString = getDateStringInKST(currentDate);
-    console.log(currentDateString);
+
+    console.log("운동 퀘스트 생성 알고리즘 실행");
 
     // 유저의 레벨에 따라서 필요조건(운동볼륨) 부여
     let quest_requirement = 0;
@@ -621,6 +617,7 @@ async function createExerciseQuest(req) {
         ],
         raw: true,
     });
+
     // 사용자가 운동한 기록에서 부위별로 사용한 운동기구 찾기
     const user_record = await Record.findAll({
         where: {
@@ -632,62 +629,71 @@ async function createExerciseQuest(req) {
         }]
     });
 
-    let usedCategories = user_record.map(record => record['Equipment.equipment_category']);
+    let usedCategories = user_record.map(record => {
+        if (record.Equipment && record.Equipment.equipment_category) {
+            return record.Equipment.equipment_category;
+        }
+        return null; // 또는 적절한 기본값 설정
+    }).filter(category => category !== null); // null이 아닌 값만 필터링
+
     usedCategories = [...new Set(usedCategories)]; // 카테고리 중복 제거
 
     // 모든 부위 중에서 아직 사용하지 않은 부위 찾기
     const unusedCategories = allCategories.filter(category => !usedCategories.includes(category.category));
 
-    // 사용되지 않은 부위가 있다면
+    // 사용되지 않은 부위가 있다면, 해당하는 부위의 어떠한 운동기구도 사용하지 않은 상태
     if (unusedCategories.length > 0) {
+        console.log("아직 사용하지 않은 부위가 있다.");
         // 사용하지 않은 부위 중 랜덤으로 하나 선택하기
         const randomCategoryIndex = Math.floor(Math.random() * unusedCategories.length);
-        console.log(randomCategoryIndex);
         const selectedCategory = unusedCategories[randomCategoryIndex].category;
-        console.log(selectedCategory);
-        // 랜덤으로 선택된 부위에서 사용하지 않은 운동기구 찾기
-        const allEquipmentsInCategory = await Equipment.findAll({
+
+        // 랜덤으로 선택된 부위의 사용되지 않은 운동기구 찾기
+        const unusedEquipmentsInCategory = await Equipment.findAll({
             where: {equipment_category: selectedCategory},
             raw: true,
         });
-        // 랜덤으로 선택된 부위에서 사용한 운동기구 equipment_num 배열
-        const usedEquipmentsInCategory = user_record
-            .filter(record => record['Equipment.equipment_category'] === selectedCategory)
-            .map(record => record['Equipment.equipment_num']);
-        // 랜덤으로 선택된 부위에서 사용하지 않은 운동기구 equipment_num 배열
-        const unusedEquipmentsInCategory = allEquipmentsInCategory.filter(equipment => !usedEquipmentsInCategory.includes(equipment.equipment_num));
-        // 사용하지 않은 부위 중 사용하지 않은 운동기구가 있다면
-        if (unusedEquipmentsInCategory.length > 0) {
-            // 사용하지 않은 운동기구 중 랜덤으로 하나 선택하기
-            const randomEquipmentIndex = Math.floor(Math.random() * unusedEquipmentsInCategory.length);
-            const selectedEquipment = unusedEquipmentsInCategory[randomEquipmentIndex];
-            // 운동 퀘스트 등록하기
-            const exercise_quest = await Quest.create({
-                quest_category: 'exercise',
-                quest_description: `${selectedEquipment.equipment_name}`,
-                quest_reward: quest_requirement * 10,
-                quest_requirement: quest_requirement,
-                equipment_num: selectedEquipment.equipment_num
-            });
-            // 해당 운동 퀘스트 미진행으로 Quest_record_db에 저장
-            await Quest_record.create({
-                quest_num: exercise_quest.quest_num,
-                user_num: req.user.user_num,
-                quest_state: '미진행',
-                state_update_date: currentDateString,
-            });
-        }
+        console.log(unusedEquipmentsInCategory);
+
+        // 사용하지 않은 운동기구 중 랜덤으로 하나 선택하기
+        const randomEquipmentIndex = Math.floor(Math.random() * unusedEquipmentsInCategory.length);
+        const selectedEquipment = unusedEquipmentsInCategory[randomEquipmentIndex];
+        // 운동 퀘스트 등록하기
+        const exercise_quest = await Quest.create({
+            quest_category: 'exercise',
+            quest_description: `${selectedEquipment.equipment_name}`,
+            quest_reward: quest_requirement * 10,
+            quest_requirement: quest_requirement,
+            equipment_num: selectedEquipment.equipment_num
+        });
+        // 해당 운동 퀘스트 미진행으로 Quest_record_db에 저장
+        await Quest_record.create({
+            quest_num: exercise_quest.quest_num,
+            user_num: req.user.user_num,
+            quest_state: '미진행',
+            state_update_date: currentDateString,
+        });
+
         // 사용되지 않은 부위가 없다면 (모든 부위를 다 했다면)
     } else {
+        console.log("모든 부위를 다했다.");
         // 사용자 기록에서 부위별 총 볼륨 계산
         let categoryVolume = {};
         user_record.forEach(record => {
-            const category = record['Equipment.equipment_category'];
-            const volume = record['record_weight'] * record['record_count'];
-            if (category in categoryVolume) {
-                categoryVolume[category] += volume;
+            let category;
+            // Equipment가 배열인 경우 첫 번째 요소 사용, 아니면 바로 사용
+            if (Array.isArray(record.Equipment)) {
+                category = record.Equipment[0]?.equipment_category;
             } else {
-                categoryVolume[category] = volume;
+                category = record.Equipment?.equipment_category;
+            }
+            const volume = record.record_weight * record.record_count;
+            if (category && volume) {
+                if (category in categoryVolume) {
+                    categoryVolume[category] += volume;
+                } else {
+                    categoryVolume[category] = volume;
+                }
             }
         });
 
@@ -701,15 +707,38 @@ async function createExerciseQuest(req) {
             }
         }
 
+        console.log(leastUsedCategory);
+
         // 해당 부위에서 사용하지 않은 운동기구 찾기
         const allEquipmentsInLeastUsedCategory = await Equipment.findAll({
             where: {equipment_category: leastUsedCategory},
             raw: true,
         });
+
+        console.log(allEquipmentsInLeastUsedCategory);
+
+        // 사용자가 사용한 운동기구 찾기
         const usedEquipmentsInLeastUsedCategory = user_record
-            .filter(record => record['Equipment.equipment_category'] === leastUsedCategory)
-            .map(record => record['Equipment.equipment_num']);
-        const unusedEquipmentsInLeastUsedCategory = allEquipmentsInLeastUsedCategory.filter(equipment => !usedEquipmentsInLeastUsedCategory.includes(equipment.equipment_num));
+            .filter(record => {
+                // Equipment가 배열인지, 객체인지에 따라 조건을 다르게 처리
+                let category = Array.isArray(record.Equipment) ? record.Equipment[0]?.equipment_category : record.Equipment?.equipment_category;
+                return category === leastUsedCategory;
+            })
+            .map(record => {
+                // Equipment가 배열인지, 객체인지에 따라 처리
+                return Array.isArray(record.Equipment) ? record.Equipment[0]?.equipment_num : record.Equipment?.equipment_num;
+            })
+            .filter(num => num !== undefined); // undefined로 된 equipment_num을 제거
+
+
+        console.log(usedEquipmentsInLeastUsedCategory);
+        // 사용하지 않은 운동기구 찾기
+        const unusedEquipmentsInLeastUsedCategory = allEquipmentsInLeastUsedCategory
+            .filter(equipment => !usedEquipmentsInLeastUsedCategory.includes(equipment.equipment_num));
+
+        console.log(unusedEquipmentsInLeastUsedCategory.length);
+
+
 
         // 사용하지 않은 운동기구가 있으면, 그 중 하나를 랜덤으로 선택하여 운동 퀘스트 생성
         if (unusedEquipmentsInLeastUsedCategory.length > 0) {
@@ -730,15 +759,22 @@ async function createExerciseQuest(req) {
                 quest_state: '미진행',
                 state_update_date: currentDateString,
             });
-
             // 사용하지 않은 운동기구가 없으면 운동기구들 중에서 가장 안 한 운동기구를 선택하여 운동 퀘스트 생성
         } else {
             // 해당 부위의 운동기구별 총 볼륨 계산
             let equipmentVolume = {};
             user_record.forEach(record => {
-                if (record['Equipment.equipment_category'] === leastUsedCategory) {
-                    const equipmentNum = record['Equipment.equipment_num'];
-                    const volume = record['record_weight'] * record['record_count'];
+                let equipmentCategory, equipmentNum;
+                // Equipment가 배열인 경우 첫 번째 요소 사용, 아니면 바로 사용
+                if (Array.isArray(record.Equipment)) {
+                    equipmentCategory = record.Equipment[0]?.equipment_category;
+                    equipmentNum = record.Equipment[0]?.equipment_num;
+                } else {
+                    equipmentCategory = record.Equipment?.equipment_category;
+                    equipmentNum = record.Equipment?.equipment_num;
+                }
+                const volume = record.record_weight * record.record_count;
+                if (equipmentCategory === leastUsedCategory && volume) {
                     if (equipmentNum in equipmentVolume) {
                         equipmentVolume[equipmentNum] += volume;
                     } else {
@@ -757,18 +793,24 @@ async function createExerciseQuest(req) {
                 }
             }
 
+            console.log(leastUsedEquipmentNum);
+
             // 가장 적게 사용된 운동기구를 찾은 경우 해당 운동기구에 대한 운동 퀘스트 생성
             if (leastUsedEquipmentNum !== null) {
-                const selectedEquipment = allEquipmentsInLeastUsedCategory.find(equipment => equipment.equipment_num === leastUsedEquipmentNum);
+                const selectedEquipment = allEquipmentsInLeastUsedCategory.find(equipment =>
+                    String(equipment.equipment_num) === String(leastUsedEquipmentNum));
+                console.log(selectedEquipment);
 
-                // 가장 적게 사용된 운동기구에 대해 날짜별 볼륨 합산
+                // 날짜별 볼륨 합산 객체 생성
                 let dailyTotalVolumes = {}; // 날짜별 볼륨 합산 저장 객체
 
+                // 가장 적게 사용된 운동기구에 대해 날짜별 볼륨 합산 계산
                 user_record.forEach(record => {
-                    if (record['Equipment.equipment_num'] === leastUsedEquipmentNum) {
-                        const date = record['record_date']; // 날짜 가져오기
-                        const volume = record['record_weight'] * record['record_count']; // 해당 기록의 볼륨 계산
-
+                    console.log(record.Equipment.equipment_num, leastUsedEquipmentNum);
+                    if (Number(record.Equipment.equipment_num) === Number(leastUsedEquipmentNum)) {
+                        const date = record.record_date; // 날짜 가져오기
+                        const volume = record.record_weight * record.record_count; // 해당 기록의 볼륨 계산
+                        console.log(date, volume);
                         // 해당 날짜에 대한 기록이 이미 있다면 볼륨 합산
                         if (dailyTotalVolumes[date]) {
                             dailyTotalVolumes[date] += volume;
@@ -831,14 +873,14 @@ exports.accept_exercise_quest = async (req, res) => {
         const not_process_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: { [Op.gt]: 5 }, // quest_num이 5보다 큰 조건
+                quest_num: {[Op.gt]: 5}, // quest_num이 5보다 큰 조건
                 quest_state: '미진행',
             },
-            include: [{ model: Quest }]
+            include: [{model: Quest}]
         });
 
         if (!not_process_quest) {
-            return res.status(404).json({ message: '미진행 상태의 운동 퀘스트를 찾을 수 없습니다.' });
+            return res.status(404).json({message: '미진행 상태의 운동 퀘스트를 찾을 수 없습니다.'});
         }
 
         await Quest_record.update({
@@ -846,13 +888,13 @@ exports.accept_exercise_quest = async (req, res) => {
             quest_start_date: currentDateString,
             state_update_date: currentDateString,
         }, {
-            where: { quest_record_num: not_process_quest.quest_record_num }
+            where: {quest_record_num: not_process_quest.quest_record_num}
         });
 
-        res.status(200).json({ message: '퀘스트 수락 처리가 완료되었습니다.' });
+        res.status(200).json({message: '퀘스트 수락 처리가 완료되었습니다.'});
     } catch (error) {
         console.error('퀘스트 수락 처리 중 오류:', error);
-        res.status(500).json({ message: '퀘스트 수락 도중 서버 오류가 발생했습니다.' });
+        res.status(500).json({message: '퀘스트 수락 도중 서버 오류가 발생했습니다.'});
     }
 }
 
@@ -866,14 +908,14 @@ exports.finish_exercise_quest = async (req, res) => {
         const achieve_quest = await Quest_record.findOne({
             where: {
                 user_num: req.user.user_num,
-                quest_num: { [Op.gt]: 5 }, // quest_num이 5보다 큰 조건
+                quest_num: {[Op.gt]: 5}, // quest_num이 5보다 큰 조건
                 quest_state: '달성',
             },
-            include: [{ model: Quest }]
+            include: [{model: Quest}]
         });
 
         if (!achieve_quest) {
-            return res.status(404).json({ message: '달성 상태의 운동 퀘스트를 찾을 수 없습니다.' });
+            return res.status(404).json({message: '달성 상태의 운동 퀘스트를 찾을 수 없습니다.'});
         }
 
         await Quest_record.update({
@@ -881,17 +923,17 @@ exports.finish_exercise_quest = async (req, res) => {
             quest_end_date: currentDateString,
             state_update_date: currentDateString,
         }, {
-            where: { quest_record_num: achieve_quest.quest_record_num }
+            where: {quest_record_num: achieve_quest.quest_record_num}
         });
 
         // 퀘스트 완료에 따른 보상 경험치 반영
         const exp = achieve_quest.Quest.quest_reward;
-        await req.user.update({ user_exp: req.user.user_exp + exp });
+        await req.user.update({user_exp: req.user.user_exp + exp});
 
-        res.status(200).json({ message: '퀘스트 완료 처리가 완료되었습니다.' });
+        res.status(200).json({message: '퀘스트 완료 처리가 완료되었습니다.'});
     } catch (error) {
         console.error('퀘스트 완료 처리 중 오류:', error);
-        res.status(500).json({ message: '퀘스트 완료 도중 서버 오류가 발생했습니다.' });
+        res.status(500).json({message: '퀘스트 완료 도중 서버 오류가 발생했습니다.'});
     }
 }
 
@@ -912,13 +954,13 @@ exports.get_finished_quest = async (req, res) => {
         });
 
         if (finishedQuests.length > 0) {
-            res.status(200).json({ message: "완료된 퀘스트 가져오기 성공", data: finishedQuests });
+            res.status(200).json({message: "완료된 퀘스트 가져오기 성공", data: finishedQuests});
         } else {
-            res.status(200).json({ message: "완료된 퀘스트가 없습니다.", data: [] });
+            res.status(200).json({message: "완료된 퀘스트가 없습니다.", data: []});
         }
     } catch (error) {
         console.error('완료된 퀘스트 가져오기 중 오류:', error);
-        res.status(500).json({ message: '완료된 퀘스트를 가져오는 도중 서버 오류가 발생했습니다.' });
+        res.status(500).json({message: '완료된 퀘스트를 가져오는 도중 서버 오류가 발생했습니다.'});
     }
 }
 
@@ -985,9 +1027,9 @@ exports.get_body_info = async (req, res) => {
         });
         // 성공 메시지 전송
         if (before_body_info.length > 0) {
-            res.status(200).json({ message: "신체 정보 가져오기 성공", data: before_body_info });
+            res.status(200).json({message: "신체 정보 가져오기 성공", data: before_body_info});
         } else {
-            res.status(200).json({ message: "신체 정보가 없습니다.", data: []});
+            res.status(200).json({message: "신체 정보가 없습니다.", data: []});
         }
     } catch (err) {
         res.status(500).send({message: "Server error", error: err.message});
@@ -1018,13 +1060,13 @@ exports.add_division_info = async (req, res) => {
         const new_division_info = await Division.create(divisionInfo);
 
         if (new_division_info) {
-            res.status(200).json({ message: "분할 정보 저장에 성공했습니다." });
+            res.status(200).json({message: "분할 정보 저장에 성공했습니다."});
         } else {
-            res.status(400).json({ message: "분할 정보 저장에 실패했습니다." });
+            res.status(400).json({message: "분할 정보 저장에 실패했습니다."});
         }
     } catch (err) {
         console.error('분할 정보 저장 중 서버 오류:', err.message);
-        res.status(500).json({ message: "서버 오류로 분할 정보 저장에 실패했습니다.", error: err.message });
+        res.status(500).json({message: "서버 오류로 분할 정보 저장에 실패했습니다.", error: err.message});
     }
 };
 
@@ -1104,6 +1146,6 @@ exports.get_division_info = async (req, res) => {
         }
     } catch (err) {
         console.error('맞춤형 분할운동 가져오기 중 오류:', err.message);
-        res.status(500).json({ message: "서버 오류로 맞춤형 분할운동 정보를 가져오는데 실패했습니다.", error: err.message });
+        res.status(500).json({message: "서버 오류로 맞춤형 분할운동 정보를 가져오는데 실패했습니다.", error: err.message});
     }
 };
