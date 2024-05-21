@@ -1123,7 +1123,7 @@ exports.get_division_info = async (req, res) => {
                     }]
                 });
                 if (markInfo.length > 0) {
-                    res.status(200).json({message: "(북마크) 맞춤형 분할운동 가져오기 성공", data: markInfo});
+                    res.status(200).json({message: "(북마크) 맞춤형 분할운동 가져오기 성공", data: markInfo.map(info => info.Equipment)});
                 } else {
                     res.status(200).json({message: "맞춤형 분할운동에 북마크된 정보가 없습니다.", data: []});
                 }
